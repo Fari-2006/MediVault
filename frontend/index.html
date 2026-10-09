@@ -1,0 +1,343 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediVault | Pharmacy Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">✚</div>
+                <div>
+                    <h2>MediVault</h2>
+                    <p>Pharmacy Management</p>
+                </div>
+            </div>
+
+            <p class="menu-label">WORKSPACE</p>
+
+            <nav class="navigation">
+                <a href="#dashboard" class="nav-link active">▦ Dashboard</a>
+                <a href="#inventory" class="nav-link">▤ Inventory</a>
+                <a href="#alerts" class="nav-link">⚠ Stock Alerts</a>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="user-avatar">F</div>
+                <div class="user-details">
+                    <strong id="userName">Pharmacy User</strong>
+                    <span id="userRole">Not logged in</span>
+                </div>
+                <button id="logoutBtn" class="logout-btn" title="Logout">↪</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">PHARMACY WORKSPACE</p>
+                    <h1 id="pageTitle">Dashboard</h1>
+                    <p class="subtitle">Manage your pharmacy inventory in one place.</p>
+                </div>
+
+                <div class="topbar-actions">
+                    <span class="status-indicator"></span>
+                    <span class="system-status">MediVault</span>
+                    <button id="refreshBtn" class="secondary-btn">↻ Refresh</button>
+                </div>
+            </header>
+
+            <!-- Login Panel -->
+            <section id="loginSection" class="panel login-panel">
+                <div class="section-heading">
+                    <div>
+                        <h2>Welcome to MediVault</h2>
+                        <p>Log in to manage your pharmacy inventory.</p>
+                    </div>
+                </div>
+
+                <form id="loginForm" class="login-form">
+                    <label for="email">Email address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        placeholder="Enter your registered email"
+                        autocomplete="username"
+                        required
+                    >
+
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+
+                    <button type="submit" class="primary-btn">Log In</button>
+                    <p id="loginMessage" class="message" role="status"></p>
+                </form>
+            </section>
+
+            <!-- Dashboard -->
+            <section id="dashboardSection" hidden>
+
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <div class="stat-top">
+                            <span>Total Medicines</span>
+                            <span class="stat-icon blue">▤</span>
+                        </div>
+                        <h2 id="totalMedicines">—</h2>
+                        <p>Medicine records</p>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-top">
+                            <span>Total Units in Stock</span>
+                            <span class="stat-icon purple">▥</span>
+                        </div>
+                        <h2 id="totalUnits">—</h2>
+                        <p>Units across all records</p>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-top">
+                            <span>Low Stock</span>
+                            <span class="stat-icon orange">⚠</span>
+                        </div>
+                        <h2 id="lowStockCount">—</h2>
+                        <p>Records needing attention</p>
+                    </article>
+
+                    <article class="stat-card">
+                        <div class="stat-top">
+                            <span>Near Expiry</span>
+                            <span class="stat-icon red">◷</span>
+                        </div>
+                        <h2 id="nearExpiryCount">—</h2>
+                        <p>Expiring within 90 days</p>
+                    </article>
+                </div>
+
+                <!-- Inventory -->
+                <section id="inventory" class="panel">
+                    <div class="section-heading inventory-heading">
+                        <div>
+                            <h2>Medicine Inventory</h2>
+                            <p>View and search your saved medicines.</p>
+                        </div>
+                        <button id="addMedicineBtn" class="primary-btn">
+                            + Add Medicine
+                        </button>
+                    </div>
+
+                    <div class="toolbar">
+                        <input
+                            type="search"
+                            id="searchInput"
+                            placeholder="Search medicine, batch, barcode..."
+                        >
+
+                        <select id="categoryFilter">
+                            <option value="">All categories</option>
+                        </select>
+
+                        <select id="statusFilter">
+                            <option value="">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>MEDICINE</th>
+                                    <th>BATCH</th>
+                                    <th>PRICE</th>
+                                    <th>STOCK</th>
+                                    <th>EXPIRY DATE</th>
+                                    <th>STATUS</th>
+                                    <th>ACTION</th>
+                                </tr>
+                            </thead>
+                            <tbody id="medicineTableBody">
+                                <tr>
+                                    <td colspan="7" class="empty-state">
+                                        Log in to load inventory.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="table-footer">
+                        <span id="tableCount">0 medicines</span>
+                        <span>Inventory records</span>
+                    </div>
+                </section>
+
+                <!-- Alerts -->
+                <section id="alerts" class="panel alerts-panel">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Inventory Alerts</h2>
+                            <p>Medicines that need your attention.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert-grid">
+                        <div class="alert-box">
+                            <div class="alert-heading">
+                                <span class="alert-symbol orange">!</span>
+                                <h3>Low Stock</h3>
+                            </div>
+                            <p>Medicines at or below their reorder level.</p>
+                            <ul id="lowStockList">
+                                <li>Log in to view alerts.</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert-box">
+                            <div class="alert-heading">
+                                <span class="alert-symbol red">◷</span>
+                                <h3>Near Expiry</h3>
+                            </div>
+                            <p>Medicines expiring within the next 90 days.</p>
+                            <ul id="nearExpiryList">
+                                <li>Log in to view alerts.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <footer class="footer">
+                MediVault Pharmacy Management System
+                <span>Academic Project</span>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Add/Edit Medicine Modal -->
+    <div id="medicineModal" class="modal" hidden>
+        <div class="modal-card">
+            <div class="section-heading">
+                <div>
+                    <h2 id="modalTitle">Add Medicine</h2>
+                    <p>Enter the medicine details below.</p>
+                </div>
+                <button id="closeModalBtn" class="close-btn" type="button">×</button>
+            </div>
+
+            <form id="medicineForm">
+                <input type="hidden" id="medicineId">
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="medicineName">Medicine name *</label>
+                        <input id="medicineName" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="genericName">Generic name</label>
+                        <input id="genericName">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="category">Category *</label>
+                        <input id="category" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="batchNumber">Batch number *</label>
+                        <input id="batchNumber" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="manufacturer">Manufacturer *</label>
+                        <input id="manufacturer" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="barcode">Barcode</label>
+                        <input id="barcode">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="purchasePrice">Purchase price (₹) *</label>
+                        <input id="purchasePrice" type="number" min="0" step="0.01" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="sellingPrice">Selling price (₹) *</label>
+                        <input id="sellingPrice" type="number" min="0" step="0.01" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="gstPercentage">GST (%)</label>
+                        <input id="gstPercentage" type="number" min="0" max="100" step="0.01" value="0">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="quantity">Quantity *</label>
+                        <input id="quantity" type="number" min="0" step="1" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="reorderLevel">Reorder level *</label>
+                        <input id="reorderLevel" type="number" min="0" step="1" value="10" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="expiryDate">Expiry date *</label>
+                        <input id="expiryDate" type="date" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="prescriptionRequired">Prescription required?</label>
+                        <select id="prescriptionRequired">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="medicineStatus">Status</label>
+                        <select id="medicineStatus">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+
+                <p id="medicineFormMessage" class="message" role="status"></p>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelModalBtn" class="secondary-btn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="primary-btn">
+                        Save Medicine
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
