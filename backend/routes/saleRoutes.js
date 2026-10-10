@@ -14,17 +14,19 @@ router.post(
     protect,
     authorize("admin", "pharmacist", "cashier"),
     async (req, res) => {
-        const session = await mongoose.startSession();
+        let session;
 
         try {
             const { items, paymentMethod = "cash" } = req.body;
 
+            // Validate sale items.
             if (!Array.isArray(items) || items.length === 0) {
                 return res.status(400).json({
                     message: "Please add at least one medicine."
                 });
             }
 
+            // Validate payment method.
             if (!["cash", "upi", "card"].includes(paymentMethod)) {
                 return res.status(400).json({
                     message: "Invalid payment method."
@@ -42,37 +44,40 @@ router.post(
                     item.quantity < 1
                 ) {
                     return res.status(400).json({
-                        message: "Each item needs a valid medicine ID and a positive whole-number quantity."
+                        message:
+                            "Each item needs a valid medicine ID and a positive whole-number quantity."
                     });
                 }
 
                 const id = item.medicineId;
-                quantities.set(
-                    id,
-                    (quantities.get(id) || 0) + item.quantity
-                );
+                const combinedQuantity =
+                    (quantities.get(id) || 0) + item.quantity;
 
-                if (!Number.isSafeInteger(quantities.get(id))) {
+                if (!Number.isSafeInteger(combinedQuantity)) {
                     return res.status(400).json({
                         message: "Quantity is too large."
                     });
                 }
+
+                quantities.set(id, combinedQuantity);
             }
 
             let invoiceNumber;
             let saleData;
 
-            // A transaction ensures stock and sale records stay consistent.
+            // Start a MongoDB transaction.
+            session = await mongoose.startSession();
+
             await session.withTransaction(async () => {
                 const medicineIds = [...quantities.keys()].sort();
 
                 const medicines = await Medicine.find({
-                    _id: { $in: medicineIds },
-                    status: "active"
+                    _id: { $in: medicineIds }
                 })
                     .sort({ _id: 1 })
                     .session(session);
 
+                // Check that all requested medicines exist.
                 if (medicines.length !== medicineIds.length) {
                     throw new Error("MEDICINE_NOT_FOUND");
                 }
@@ -81,11 +86,37 @@ router.post(
                 let subtotal = 0;
                 let totalGST = 0;
 
+                // Use the server's current date, not the browser's date.
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
                 for (const medicine of medicines) {
+                    // Reject inactive medicines.
+                    if (medicine.status !== "active") {
+                        throw new Error(
+                            `MEDICINE_INACTIVE:${medicine.medicineName}`
+                        );
+                    }
+
+                    // Reject expired medicines.
+                    // A medicine expiring today remains valid for that
+                    // calendar day; it is rejected from the next day.
+                    if (medicine.expiryDate) {
+                        const expiryDate = new Date(medicine.expiryDate);
+                        expiryDate.setHours(0, 0, 0, 0);
+
+                        if (expiryDate < today) {
+                            throw new Error(
+                                `MEDICINE_EXPIRED:${medicine.medicineName}`
+                            );
+                        }
+                    }
+
                     const quantity = quantities.get(
                         medicine._id.toString()
                     );
 
+                    // Check available stock.
                     if (medicine.quantity < quantity) {
                         throw new Error(
                             `INSUFFICIENT_STOCK:${medicine.medicineName}: available ${medicine.quantity}`
@@ -100,7 +131,10 @@ router.post(
                     );
 
                     const gstAmount = Number(
-                        (itemSubtotal * gstPercentage / 100).toFixed(2)
+                        (
+                            (itemSubtotal * gstPercentage) /
+                            100
+                        ).toFixed(2)
                     );
 
                     const itemTotal = Number(
@@ -129,33 +163,49 @@ router.post(
                     (subtotal + totalGST).toFixed(2)
                 );
 
+                // Generate invoice number.
                 invoiceNumber =
                     "MV-" +
                     Date.now() +
                     "-" +
                     new mongoose.Types.ObjectId().toString().slice(-6);
 
+                // Create the sale inside the transaction.
                 const [sale] = await Sale.create(
-                    [{
-                        invoiceNumber,
-                        items: saleItems,
-                        subtotal,
-                        totalGST,
-                        grandTotal,
-                        soldBy: req.user.id,
-                        paymentMethod,
-                        status: "completed"
-                    }],
+                    [
+                        {
+                            invoiceNumber,
+                            items: saleItems,
+                            subtotal,
+                            totalGST,
+                            grandTotal,
+                            soldBy: req.user.id,
+                            paymentMethod,
+                            status: "completed"
+                        }
+                    ],
                     { session }
                 );
 
-                // Deduct stock only if sufficient stock remains.
+                // Deduct stock only if the medicine is still active,
+                // unexpired, and has sufficient stock.
                 for (const item of saleItems) {
                     const result = await Medicine.updateOne(
                         {
                             _id: item.medicine,
                             status: "active",
-                            quantity: { $gte: item.quantity }
+                            quantity: { $gte: item.quantity },
+                            $or: [
+                                { expiryDate: null },
+                                { expiryDate: { $exists: false } },
+                                {
+                                    expiryDate: {
+                                        $gte: new Date(
+                                            new Date().setHours(0, 0, 0, 0)
+                                        )
+                                    }
+                                }
+                            ]
                         },
                         {
                             $inc: {
@@ -182,7 +232,26 @@ router.post(
         } catch (error) {
             if (error.message === "MEDICINE_NOT_FOUND") {
                 return res.status(404).json({
-                    message: "One or more medicines were not found or are inactive."
+                    message:
+                        "One or more medicines were not found."
+                });
+            }
+
+            if (error.message.startsWith("MEDICINE_INACTIVE:")) {
+                return res.status(400).json({
+                    message:
+                        error.message.substring(
+                            "MEDICINE_INACTIVE:".length
+                        ) + " is inactive and cannot be sold."
+                });
+            }
+
+            if (error.message.startsWith("MEDICINE_EXPIRED:")) {
+                return res.status(400).json({
+                    message:
+                        error.message.substring(
+                            "MEDICINE_EXPIRED:".length
+                        ) + " has expired and cannot be sold."
                 });
             }
 
@@ -196,7 +265,8 @@ router.post(
 
             if (error.message.startsWith("STOCK_UPDATE_FAILED:")) {
                 return res.status(409).json({
-                    message: "Stock changed during checkout. Please retry the sale."
+                    message:
+                        "Medicine stock or expiry status changed during checkout. Please refresh and retry the sale."
                 });
             }
 
@@ -206,7 +276,9 @@ router.post(
                 message: "Unable to complete sale."
             });
         } finally {
-            await session.endSession();
+            if (session) {
+                await session.endSession();
+            }
         }
     }
 );

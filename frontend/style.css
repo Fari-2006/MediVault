@@ -850,3 +850,145 @@ tbody tr:hover {
         flex-direction: column;
     }
 }
+
+/* ========================================
+   PROFESSIONAL PRINT INVOICE
+   ======================================== */
+
+@media print {
+    @page {
+        size: A4;
+        margin: 15mm;
+    }
+
+    html,
+    body {
+        width: 100%;
+        min-height: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #111827 !important;
+        font-size: 11pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Hide application controls and other pages. */
+    .sidebar,
+    .topbar,
+    .footer,
+    .stats-grid,
+    .toast,
+    .modal,
+    .primary-btn,
+    .secondary-btn,
+    button,
+    .navigation,
+    .sidebar-bottom {
+        display: none !important;
+    }
+
+    .app,
+    .main-content {
+        display: block !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+    /* Hide all pages and panels by default. */
+    .panel,
+    section,
+    #loginSection,
+    #dashboardSection,
+    #inventorySection,
+    #alertsSection,
+    #salesSection,
+    #newSaleSection {
+        display: none !important;
+    }
+
+    /*
+       Print only the completed invoice.
+       The invoice must be inside #saleInvoiceResult.
+    */
+    #newSaleSection,
+    #newSaleSection #saleInvoiceResult {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    #newSaleSection {
+        border: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    #saleInvoiceResult {
+        width: 100% !important;
+        margin: 0 auto !important;
+        padding: 10mm !important;
+        border: 1px solid #d1d5db !important;
+        border-radius: 0 !important;
+        background: #ffffff !important;
+        color: #111827 !important;
+        box-shadow: none !important;
+    }
+
+    #saleInvoiceResult h1,
+    #saleInvoiceResult h2,
+    #saleInvoiceResult h3 {
+        color: #111827 !important;
+        margin-bottom: 8px;
+    }
+
+    #saleInvoiceResult p,
+    #saleInvoiceResult span,
+    #saleInvoiceResult strong,
+    #saleInvoiceResult div {
+        color: #111827;
+    }
+
+    #saleInvoiceResult table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        white-space: normal !important;
+        margin-top: 15px;
+    }
+
+    #saleInvoiceResult thead {
+        display: table-header-group;
+        background: #f3f4f6 !important;
+    }
+
+    #saleInvoiceResult tr {
+        break-inside: avoid;
+    }
+
+    #saleInvoiceResult th,
+    #saleInvoiceResult td {
+        padding: 8px !important;
+        border: 1px solid #d1d5db !important;
+        color: #111827 !important;
+        font-size: 10pt !important;
+        white-space: normal !important;
+    }
+
+    #saleInvoiceResult th {
+        font-weight: 700 !important;
+    }
+
+    #saleInvoiceResult * {
+        visibility: visible !important;
+    }
+
+    a {
+        color: #111827 !important;
+        text-decoration: none !important;
+    }
+}

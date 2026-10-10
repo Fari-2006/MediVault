@@ -7,87 +7,116 @@
 
 const API_BASE_URL = "http://localhost:5000/api";
 
-// Keep the token in memory instead of localStorage.
-// Reloading the page will require logging in again.
 let authToken = "";
 let currentUser = null;
 let medicines = [];
+let allSaleMedicines = [];
+let sales = [];
+let saleCart = [];
 let toastTimer = null;
+let searchTimer = null;
 
 // ============================================
 // DOM ELEMENTS
 // ============================================
 
-const loginSection = document.getElementById("loginSection");
-const dashboardSection = document.getElementById("dashboardSection");
+const $ = id => document.getElementById(id);
 
-const loginForm = document.getElementById("loginForm");
-const loginMessage = document.getElementById("loginMessage");
+const loginSection = $("loginSection");
+const appSections = $("appSections");
+const dashboardSection = $("dashboardSection");
+const salesSection = $("salesSection");
+const newSaleSection = $("newSaleSection");
 
-const userName = document.getElementById("userName");
-const userRole = document.getElementById("userRole");
+const loginForm = $("loginForm");
+const loginMessage = $("loginMessage");
+const userName = $("userName");
+const userRole = $("userRole");
 
-const totalMedicines = document.getElementById("totalMedicines");
-const totalUnits = document.getElementById("totalUnits");
-const lowStockCount = document.getElementById("lowStockCount");
-const nearExpiryCount = document.getElementById("nearExpiryCount");
+const totalMedicines = $("totalMedicines");
+const totalUnits = $("totalUnits");
+const lowStockCount = $("lowStockCount");
+const nearExpiryCount = $("nearExpiryCount");
 
-const medicineTableBody = document.getElementById("medicineTableBody");
-const tableCount = document.getElementById("tableCount");
+// Today's dashboard cards
+const todaySalesCount = $("todaySalesCount");
+const todayRevenue = $("todayRevenue");
 
-const searchInput = document.getElementById("searchInput");
-const categoryFilter = document.getElementById("categoryFilter");
-const statusFilter = document.getElementById("statusFilter");
+const medicineTableBody = $("medicineTableBody");
+const tableCount = $("tableCount");
+const searchInput = $("searchInput");
+const categoryFilter = $("categoryFilter");
+const statusFilter = $("statusFilter");
 
-const lowStockList = document.getElementById("lowStockList");
-const nearExpiryList = document.getElementById("nearExpiryList");
+const lowStockList = $("lowStockList");
+const nearExpiryList = $("nearExpiryList");
 
-const medicineModal = document.getElementById("medicineModal");
-const medicineForm = document.getElementById("medicineForm");
-const medicineFormMessage = document.getElementById("medicineFormMessage");
+const medicineModal = $("medicineModal");
+const medicineForm = $("medicineForm");
+const medicineFormMessage = $("medicineFormMessage");
+const modalTitle = $("modalTitle");
+const medicineIdInput = $("medicineId");
+const toast = $("toast");
 
-const modalTitle = document.getElementById("modalTitle");
-const medicineIdInput = document.getElementById("medicineId");
+const salesTableBody = $("salesTableBody");
+const salesSearchInput = $("salesSearchInput");
+const salesPaymentFilter = $("salesPaymentFilter");
+const totalSalesCount = $("totalSalesCount");
+const totalSalesValue = $("totalSalesValue");
+const salesTableCount = $("salesTableCount");
+const salesMessage = $("salesMessage");
 
-const toast = document.getElementById("toast");
+// Billing elements
+const saleMedicineSelect = $("saleMedicineSelect");
+const saleQuantityInput = $("saleQuantityInput");
+const addSaleItemBtn = $("addSaleItemBtn");
+const saleStockInfo = $("saleStockInfo");
+const saleCartTableBody = $("saleCartTableBody");
+const salePaymentMethod = $("salePaymentMethod");
+const saleSubtotal = $("saleSubtotal");
+const saleGST = $("saleGST");
+const saleGrandTotal = $("saleGrandTotal");
+const saleMessage = $("saleMessage");
+const clearSaleBtn = $("clearSaleBtn");
+const completeSaleBtn = $("completeSaleBtn");
+const saleInvoiceResult = $("saleInvoiceResult");
+const completedInvoiceNumber = $("completedInvoiceNumber");
+const completedInvoiceTotal = $("completedInvoiceTotal");
+const printInvoiceBtn = $("printInvoiceBtn");
+const newSaleBtn = $("newSaleBtn");
 
 // ============================================
 // HELPER FUNCTIONS
 // ============================================
 
 function escapeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, character => {
-        const replacements = {
-            "&": "&amp;",
-            "<": "&lt;",
-            ">": "&gt;",
-            '"': "&quot;",
-            "'": "&#39;"
-        };
-
-        return replacements[character];
-    });
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[character]);
 }
 
 function showToast(message, isError = false) {
+    if (!toast) return;
+
     toast.textContent = message;
     toast.classList.toggle("toast-error", isError);
     toast.classList.add("show");
 
     clearTimeout(toastTimer);
-
-    toastTimer = setTimeout(() => {
-        toast.classList.remove("show");
-    }, 3500);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 3500);
 }
 
 function setMessage(element, message, type = "") {
+    if (!element) return;
+
     element.textContent = message;
     element.className = "message";
 
-    if (type) {
-        element.classList.add(type);
-    }
+    if (type) element.classList.add(type);
 }
 
 function formatCurrency(value) {
@@ -102,10 +131,7 @@ function formatDate(value) {
     if (!value) return "—";
 
     const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-        return "Invalid date";
-    }
+    if (Number.isNaN(date.getTime())) return "Invalid date";
 
     return date.toLocaleDateString("en-IN", {
         day: "2-digit",
@@ -113,6 +139,18 @@ function formatDate(value) {
         year: "numeric",
         timeZone: "UTC"
     });
+}
+
+function isExpired(medicine) {
+    if (!medicine.expiryDate) return true;
+
+    const expiry = new Date(medicine.expiryDate);
+    const today = new Date();
+
+    expiry.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    return expiry < today;
 }
 
 function isLowStock(medicine) {
@@ -128,11 +166,24 @@ function isNearExpiry(medicine) {
     const expiry = new Date(medicine.expiryDate);
     expiry.setHours(0, 0, 0, 0);
 
-    const daysRemaining = Math.floor(
+    const days = Math.floor(
         (expiry.getTime() - today.getTime()) / 86400000
     );
 
-    return daysRemaining >= 0 && daysRemaining <= 90;
+    return days >= 0 && days <= 90;
+}
+
+// Returns today's date using the browser's local timezone.
+function getLocalDateKey(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "";
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
 }
 
 // ============================================
@@ -156,9 +207,9 @@ async function apiRequest(path, options = {}) {
             ...options,
             headers
         });
-    } catch (error) {
+    } catch {
         throw new Error(
-            "Cannot connect to the MediVault server. Check that your backend is running."
+            "Cannot connect to MediVault. Check that your backend is running."
         );
     }
 
@@ -172,9 +223,7 @@ async function apiRequest(path, options = {}) {
 
     if (response.status === 401 && authToken) {
         logout(false);
-        throw new Error(
-            "Your session has expired. Please log in again."
-        );
+        throw new Error("Your session has expired. Please log in again.");
     }
 
     if (!response.ok) {
@@ -187,62 +236,130 @@ async function apiRequest(path, options = {}) {
 }
 
 // ============================================
+// PAGE NAVIGATION
+// ============================================
+
+function showPage(page) {
+    if (!authToken) return;
+
+    const pageTitle = $("pageTitle");
+    const inventorySection = $("inventory");
+    const alertsSection = $("alerts");
+    const statsGrid = dashboardSection?.querySelector(":scope > .stats-grid");
+
+    if (appSections) appSections.hidden = false;
+
+    if (dashboardSection) {
+        dashboardSection.hidden =
+            page === "sales" || page === "new-sale";
+    }
+
+    if (salesSection) {
+        salesSection.hidden = page !== "sales";
+    }
+
+    if (newSaleSection) {
+        newSaleSection.hidden = page !== "new-sale";
+    }
+
+    if (statsGrid) statsGrid.hidden = page !== "dashboard";
+
+    if (inventorySection) {
+        inventorySection.hidden = page !== "inventory";
+    }
+
+    if (alertsSection) {
+        alertsSection.hidden = page !== "alerts";
+    }
+
+    const titles = {
+        dashboard: "Dashboard",
+        inventory: "Inventory",
+        alerts: "Stock Alerts",
+        sales: "Sales History",
+        "new-sale": "New Sale / Billing"
+    };
+
+    if (pageTitle) pageTitle.textContent = titles[page] || "Dashboard";
+
+    document.querySelectorAll(".nav-link").forEach(link => {
+        const linkPage = link.dataset.page ||
+            (link.getAttribute("href") || "").replace("#", "");
+
+        link.classList.toggle("active", linkPage === page);
+    });
+
+    if (page === "sales") loadSales();
+    if (page === "new-sale") loadSaleMedicines();
+}
+
+document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", event => {
+        event.preventDefault();
+
+        const page = link.dataset.page ||
+            (link.getAttribute("href") || "#dashboard").replace("#", "");
+
+        showPage(page);
+    });
+});
+
+// ============================================
 // LOGIN
 // ============================================
 
-loginForm.addEventListener("submit", async event => {
-    event.preventDefault();
+if (loginForm) {
+    loginForm.addEventListener("submit", async event => {
+        event.preventDefault();
 
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
+        const email = $("email").value.trim();
+        const password = $("password").value;
+        const submitButton = loginForm.querySelector('button[type="submit"]');
 
-    const submitButton = loginForm.querySelector(
-        'button[type="submit"]'
-    );
+        submitButton.disabled = true;
+        setMessage(loginMessage, "Logging in...");
 
-    submitButton.disabled = true;
-    setMessage(loginMessage, "Logging in...");
+        try {
+            const data = await apiRequest("/auth/login", {
+                method: "POST",
+                body: JSON.stringify({ email, password })
+            });
 
-    try {
-        const data = await apiRequest("/auth/login", {
-            method: "POST",
-            body: JSON.stringify({
-                email,
-                password
-            })
-        });
+            if (!data.token || !data.user) {
+                throw new Error(
+                    "Login response is missing user or token information."
+                );
+            }
 
-        if (!data.token || !data.user) {
-            throw new Error("The login response is missing user or token information.");
+            authToken = data.token;
+            currentUser = data.user;
+
+            userName.textContent = currentUser.name || currentUser.email;
+            userRole.textContent = currentUser.role || "user";
+
+            loginSection.hidden = true;
+            if (appSections) appSections.hidden = false;
+
+            loginForm.reset();
+
+            await refreshDashboard();
+            showPage("dashboard");
+
+            setMessage(loginMessage, "");
+            showToast("Welcome to MediVault!");
+        } catch (error) {
+            authToken = "";
+            currentUser = null;
+
+            loginSection.hidden = false;
+            if (appSections) appSections.hidden = true;
+
+            setMessage(loginMessage, error.message, "error");
+        } finally {
+            submitButton.disabled = false;
         }
-
-        authToken = data.token;
-        currentUser = data.user;
-
-        userName.textContent = currentUser.name || currentUser.email;
-        userRole.textContent = currentUser.role || "user";
-
-        loginSection.hidden = true;
-        dashboardSection.hidden = false;
-
-        loginForm.reset();
-
-        await refreshDashboard();
-
-        showToast("Welcome to MediVault!");
-
-    } catch (error) {
-        authToken = "";
-        currentUser = null;
-
-        loginSection.hidden = false;
-        dashboardSection.hidden = true;
-
-        setMessage(loginMessage, error.message, "error");
-    } finally {
-        submitButton.disabled = false;
-    }
-});
+    });
+}
 
 // ============================================
 // LOGOUT
@@ -252,38 +369,95 @@ function logout(showMessage = true) {
     authToken = "";
     currentUser = null;
     medicines = [];
+    allSaleMedicines = [];
+    sales = [];
+    saleCart = [];
 
     loginSection.hidden = false;
-    dashboardSection.hidden = true;
+    if (appSections) appSections.hidden = true;
+    if (dashboardSection) dashboardSection.hidden = true;
+    if (salesSection) salesSection.hidden = true;
+    if (newSaleSection) newSaleSection.hidden = true;
 
     userName.textContent = "Pharmacy User";
     userRole.textContent = "Not logged in";
 
-    loginForm.reset();
-    medicineForm.reset();
+    loginForm?.reset();
+    medicineForm?.reset();
+    medicineTableBody?.replaceChildren();
+    salesTableBody?.replaceChildren();
+    saleCartTableBody?.replaceChildren();
 
-    medicineTableBody.replaceChildren();
+    for (const id of [
+        "totalMedicines",
+        "totalUnits",
+        "lowStockCount",
+        "nearExpiryCount",
+        "todaySalesCount",
+        "todayRevenue",
+        "totalSalesCount",
+        "totalSalesValue"
+    ]) {
+        if ($(id)) $(id).textContent = "—";
+    }
 
-    totalMedicines.textContent = "—";
-    totalUnits.textContent = "—";
-    lowStockCount.textContent = "—";
-    nearExpiryCount.textContent = "—";
+    if (salesTableCount) salesTableCount.textContent = "0 sales";
 
-    lowStockList.replaceChildren();
-    nearExpiryList.replaceChildren();
+    lowStockList?.replaceChildren();
+    nearExpiryList?.replaceChildren();
+
+    setMessage(salesMessage, "");
+    setMessage(saleMessage, "");
+
+    document.querySelectorAll(".nav-link").forEach(link => {
+        link.classList.remove("active");
+    });
+
+    renderSaleCart();
 
     if (showMessage) {
         setMessage(loginMessage, "You have logged out.", "success");
     }
 }
 
-document.getElementById("logoutBtn").addEventListener("click", () => {
-    logout();
-});
+$("logoutBtn")?.addEventListener("click", () => logout());
 
 // ============================================
-// LOAD DASHBOARD DATA
+// DASHBOARD DATA
 // ============================================
+
+async function loadTodaySales() {
+    if (!authToken) return;
+
+    try {
+        const data = await apiRequest("/sales");
+        const allSales = data.sales || [];
+        const today = getLocalDateKey(new Date());
+
+        const completedToday = allSales.filter(sale =>
+            sale.status === "completed" &&
+            getLocalDateKey(sale.createdAt) === today
+        );
+
+        const revenue = completedToday.reduce(
+            (total, sale) => total + Number(sale.grandTotal || 0),
+            0
+        );
+
+        if (todaySalesCount) {
+            todaySalesCount.textContent = completedToday.length;
+        }
+
+        if (todayRevenue) {
+            todayRevenue.textContent = formatCurrency(revenue);
+        }
+    } catch (error) {
+        if (todaySalesCount) todaySalesCount.textContent = "—";
+        if (todayRevenue) todayRevenue.textContent = "—";
+
+        console.error("Unable to load today's sales:", error.message);
+    }
+}
 
 async function refreshDashboard() {
     if (!authToken) return;
@@ -291,18 +465,19 @@ async function refreshDashboard() {
     try {
         await loadMedicines();
         await loadAlerts();
+        await loadTodaySales();
     } catch (error) {
         showToast(error.message, true);
         throw error;
     }
 }
 
-document.getElementById("refreshBtn").addEventListener("click", async () => {
+$("refreshBtn")?.addEventListener("click", async () => {
     try {
         await refreshDashboard();
         showToast("Dashboard refreshed successfully.");
     } catch {
-        // The API helper already displays the error.
+        // The error is already displayed.
     }
 });
 
@@ -313,19 +488,16 @@ document.getElementById("refreshBtn").addEventListener("click", async () => {
 async function loadMedicines() {
     const params = new URLSearchParams();
 
-    const search = searchInput.value.trim();
-    const category = categoryFilter.value;
-    const status = statusFilter.value;
+    const search = searchInput?.value.trim() || "";
+    const category = categoryFilter?.value || "";
+    const status = statusFilter?.value || "";
 
     if (search) params.set("search", search);
     if (category) params.set("category", category);
     if (status) params.set("status", status);
 
     const query = params.toString();
-
-    const data = await apiRequest(
-        `/medicines${query ? `?${query}` : ""}`
-    );
+    const data = await apiRequest(`/medicines${query ? `?${query}` : ""}`);
 
     medicines = data.medicines || [];
 
@@ -334,11 +506,9 @@ async function loadMedicines() {
     updateCategoryFilter(medicines);
 }
 
-// ============================================
-// RENDER MEDICINE TABLE
-// ============================================
-
 function renderMedicineTable(list) {
+    if (!medicineTableBody) return;
+
     medicineTableBody.replaceChildren();
 
     if (list.length === 0) {
@@ -365,25 +535,21 @@ function renderMedicineTable(list) {
             : "status-inactive";
 
         const cells = [
-            `
-                <div class="medicine-name">${escapeHTML(medicine.medicineName)}</div>
-                <div class="medicine-generic">${escapeHTML(medicine.genericName || "No generic name")}</div>
-            `,
+            `<div class="medicine-name">${escapeHTML(medicine.medicineName)}</div>
+             <div class="medicine-generic">${escapeHTML(medicine.genericName || "No generic name")}</div>`,
             escapeHTML(medicine.batchNumber),
             `<span class="price-value">${formatCurrency(medicine.sellingPrice)}</span>`,
             `<span class="stock-value ${stockClass}">${escapeHTML(medicine.quantity)}</span>`,
             escapeHTML(formatDate(medicine.expiryDate)),
             `<span class="status-badge ${statusClass}">${escapeHTML(medicine.status)}</span>`,
-            `
-                <div class="row-actions">
-                    <button class="action-btn" data-action="edit" data-id="${escapeHTML(medicine._id)}">Edit</button>
-                    ${
-                        currentUser?.role === "admin"
-                            ? `<button class="action-btn delete-btn" data-action="delete" data-id="${escapeHTML(medicine._id)}">Delete</button>`
-                            : ""
-                    }
-                </div>
-            `
+            `<div class="row-actions">
+                <button class="action-btn" data-action="edit"
+                    data-id="${escapeHTML(medicine._id)}">Edit</button>
+                ${currentUser?.role === "admin"
+                    ? `<button class="action-btn delete-btn" data-action="delete"
+                        data-id="${escapeHTML(medicine._id)}">Delete</button>`
+                    : ""}
+            </div>`
         ];
 
         for (const content of cells) {
@@ -395,49 +561,44 @@ function renderMedicineTable(list) {
         medicineTableBody.appendChild(row);
     }
 
-    tableCount.textContent =
-        `${list.length} ${list.length === 1 ? "medicine" : "medicines"}`;
+    if (tableCount) {
+        tableCount.textContent =
+            `${list.length} ${list.length === 1 ? "medicine" : "medicines"}`;
+    }
 }
 
-// ============================================
-// UPDATE STATISTICS
-// ============================================
-
 function updateStatistics(list) {
-    totalMedicines.textContent = list.length;
+    if (totalMedicines) totalMedicines.textContent = list.length;
 
     const units = list.reduce(
         (total, medicine) => total + Number(medicine.quantity || 0),
         0
     );
 
-    totalUnits.textContent = units.toLocaleString("en-IN");
+    if (totalUnits) {
+        totalUnits.textContent = units.toLocaleString("en-IN");
+    }
 
-    lowStockCount.textContent = list.filter(
-        medicine =>
-            medicine.status === "active" && isLowStock(medicine)
-    ).length;
+    if (lowStockCount) {
+        lowStockCount.textContent = list.filter(
+            medicine => medicine.status === "active" && isLowStock(medicine)
+        ).length;
+    }
 
-    nearExpiryCount.textContent = list.filter(
-        medicine =>
-            medicine.status === "active" && isNearExpiry(medicine)
-    ).length;
+    if (nearExpiryCount) {
+        nearExpiryCount.textContent = list.filter(
+            medicine => medicine.status === "active" && isNearExpiry(medicine)
+        ).length;
+    }
 }
 
-// ============================================
-// CATEGORY FILTER
-// ============================================
-
 function updateCategoryFilter(list) {
-    const selectedCategory = categoryFilter.value;
+    if (!categoryFilter) return;
 
-    const categories = [
-        ...new Set(
-            list
-                .map(medicine => medicine.category)
-                .filter(Boolean)
-        )
-    ].sort((a, b) => a.localeCompare(b));
+    const selectedCategory = categoryFilter.value;
+    const categories = [...new Set(
+        list.map(medicine => medicine.category).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
 
     categoryFilter.replaceChildren();
 
@@ -458,13 +619,7 @@ function updateCategoryFilter(list) {
     }
 }
 
-// ============================================
-// SEARCH AND FILTER EVENTS
-// ============================================
-
-let searchTimer;
-
-searchInput.addEventListener("input", () => {
+searchInput?.addEventListener("input", () => {
     clearTimeout(searchTimer);
 
     searchTimer = setTimeout(async () => {
@@ -476,7 +631,7 @@ searchInput.addEventListener("input", () => {
     }, 300);
 });
 
-categoryFilter.addEventListener("change", async () => {
+categoryFilter?.addEventListener("change", async () => {
     try {
         await loadMedicines();
     } catch (error) {
@@ -484,7 +639,7 @@ categoryFilter.addEventListener("change", async () => {
     }
 });
 
-statusFilter.addEventListener("change", async () => {
+statusFilter?.addEventListener("change", async () => {
     try {
         await loadMedicines();
     } catch (error) {
@@ -493,7 +648,7 @@ statusFilter.addEventListener("change", async () => {
 });
 
 // ============================================
-// LOAD LOW-STOCK AND NEAR-EXPIRY ALERTS
+// STOCK ALERTS
 // ============================================
 
 async function loadAlerts() {
@@ -502,8 +657,8 @@ async function loadAlerts() {
         apiRequest("/medicines/alerts/near-expiry?days=90")
     ]);
 
-    lowStockCount.textContent = lowData.count ?? 0;
-    nearExpiryCount.textContent = expiryData.count ?? 0;
+    if (lowStockCount) lowStockCount.textContent = lowData.count ?? 0;
+    if (nearExpiryCount) nearExpiryCount.textContent = expiryData.count ?? 0;
 
     renderAlertList(
         lowStockList,
@@ -520,6 +675,8 @@ async function loadAlerts() {
 }
 
 function renderAlertList(container, list, emptyMessage, showExpiry = false) {
+    if (!container) return;
+
     container.replaceChildren();
 
     if (list.length === 0) {
@@ -531,19 +688,14 @@ function renderAlertList(container, list, emptyMessage, showExpiry = false) {
 
     for (const medicine of list.slice(0, 5)) {
         const item = document.createElement("li");
-
         const title = document.createElement("strong");
-        title.textContent = medicine.medicineName;
-
         const detail = document.createElement("span");
 
-        if (showExpiry) {
-            detail.textContent =
-                `Batch ${medicine.batchNumber} · Expires ${formatDate(medicine.expiryDate)}`;
-        } else {
-            detail.textContent =
-                `Stock: ${medicine.quantity} · Reorder at ${medicine.reorderLevel}`;
-        }
+        title.textContent = medicine.medicineName;
+
+        detail.textContent = showExpiry
+            ? `Batch ${medicine.batchNumber} · Expires ${formatDate(medicine.expiryDate)}`
+            : `Stock: ${medicine.quantity} · Reorder at ${medicine.reorderLevel}`;
 
         item.append(title, detail);
         container.appendChild(item);
@@ -551,14 +703,12 @@ function renderAlertList(container, list, emptyMessage, showExpiry = false) {
 }
 
 // ============================================
-// OPEN AND CLOSE MEDICINE FORM
+// MEDICINE FORM
 // ============================================
 
 function openMedicineModal(medicine = null) {
-    if (
-        !currentUser ||
-        !["admin", "pharmacist", "storekeeper"].includes(currentUser.role)
-    ) {
+    if (!currentUser ||
+        !["admin", "pharmacist", "storekeeper"].includes(currentUser.role)) {
         showToast("You do not have permission to manage medicines.", true);
         return;
     }
@@ -566,10 +716,10 @@ function openMedicineModal(medicine = null) {
     medicineForm.reset();
     medicineIdInput.value = "";
 
-    document.getElementById("gstPercentage").value = "0";
-    document.getElementById("reorderLevel").value = "10";
-    document.getElementById("prescriptionRequired").value = "false";
-    document.getElementById("medicineStatus").value = "active";
+    $("gstPercentage").value = "0";
+    $("reorderLevel").value = "10";
+    $("prescriptionRequired").value = "false";
+    $("medicineStatus").value = "active";
 
     setMessage(medicineFormMessage, "");
 
@@ -577,49 +727,24 @@ function openMedicineModal(medicine = null) {
         modalTitle.textContent = "Edit Medicine";
         medicineIdInput.value = medicine._id;
 
-        document.getElementById("medicineName").value =
-            medicine.medicineName || "";
+        const fields = [
+            "medicineName", "genericName", "category", "batchNumber",
+            "manufacturer", "barcode", "purchasePrice", "sellingPrice",
+            "gstPercentage", "quantity", "reorderLevel"
+        ];
 
-        document.getElementById("genericName").value =
-            medicine.genericName || "";
+        for (const field of fields) {
+            $(field).value = medicine[field] ?? "";
+        }
 
-        document.getElementById("category").value =
-            medicine.category || "";
+        $("expiryDate").value = medicine.expiryDate
+            ? new Date(medicine.expiryDate).toISOString().slice(0, 10)
+            : "";
 
-        document.getElementById("batchNumber").value =
-            medicine.batchNumber || "";
-
-        document.getElementById("manufacturer").value =
-            medicine.manufacturer || "";
-
-        document.getElementById("barcode").value =
-            medicine.barcode || "";
-
-        document.getElementById("purchasePrice").value =
-            medicine.purchasePrice ?? 0;
-
-        document.getElementById("sellingPrice").value =
-            medicine.sellingPrice ?? 0;
-
-        document.getElementById("gstPercentage").value =
-            medicine.gstPercentage ?? 0;
-
-        document.getElementById("quantity").value =
-            medicine.quantity ?? 0;
-
-        document.getElementById("reorderLevel").value =
-            medicine.reorderLevel ?? 10;
-
-        document.getElementById("expiryDate").value =
-            medicine.expiryDate
-                ? new Date(medicine.expiryDate).toISOString().slice(0, 10)
-                : "";
-
-        document.getElementById("prescriptionRequired").value =
+        $("prescriptionRequired").value =
             String(Boolean(medicine.prescriptionRequired));
 
-        document.getElementById("medicineStatus").value =
-            medicine.status || "active";
+        $("medicineStatus").value = medicine.status || "active";
     } else {
         modalTitle.textContent = "Add Medicine";
     }
@@ -633,62 +758,47 @@ function closeMedicineModal() {
     setMessage(medicineFormMessage, "");
 }
 
-document.getElementById("addMedicineBtn").addEventListener("click", () => {
-    openMedicineModal();
-});
+$("addMedicineBtn")?.addEventListener("click", () => openMedicineModal());
+$("closeModalBtn")?.addEventListener("click", closeMedicineModal);
+$("cancelModalBtn")?.addEventListener("click", closeMedicineModal);
 
-document.getElementById("closeModalBtn").addEventListener(
-    "click",
-    closeMedicineModal
-);
-
-document.getElementById("cancelModalBtn").addEventListener(
-    "click",
-    closeMedicineModal
-);
-
-medicineModal.addEventListener("click", event => {
-    if (event.target === medicineModal) {
-        closeMedicineModal();
-    }
+medicineModal?.addEventListener("click", event => {
+    if (event.target === medicineModal) closeMedicineModal();
 });
 
 document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !medicineModal.hidden) {
+    if (event.key === "Escape" && medicineModal && !medicineModal.hidden) {
         closeMedicineModal();
     }
 });
 
 // ============================================
-// ADD OR UPDATE MEDICINE
+// SAVE MEDICINE
 // ============================================
 
-medicineForm.addEventListener("submit", async event => {
+medicineForm?.addEventListener("submit", async event => {
     event.preventDefault();
 
     const id = medicineIdInput.value;
 
     const medicine = {
-        medicineName: document.getElementById("medicineName").value.trim(),
-        genericName: document.getElementById("genericName").value.trim(),
-        category: document.getElementById("category").value.trim(),
-        batchNumber: document.getElementById("batchNumber").value.trim(),
-        manufacturer: document.getElementById("manufacturer").value.trim(),
-        barcode: document.getElementById("barcode").value.trim(),
-        purchasePrice: Number(document.getElementById("purchasePrice").value),
-        sellingPrice: Number(document.getElementById("sellingPrice").value),
-        gstPercentage: Number(document.getElementById("gstPercentage").value),
-        quantity: Number(document.getElementById("quantity").value),
-        reorderLevel: Number(document.getElementById("reorderLevel").value),
-        expiryDate: document.getElementById("expiryDate").value,
-        prescriptionRequired:
-            document.getElementById("prescriptionRequired").value === "true",
-        status: document.getElementById("medicineStatus").value
+        medicineName: $("medicineName").value.trim(),
+        genericName: $("genericName").value.trim(),
+        category: $("category").value.trim(),
+        batchNumber: $("batchNumber").value.trim(),
+        manufacturer: $("manufacturer").value.trim(),
+        barcode: $("barcode").value.trim(),
+        purchasePrice: Number($("purchasePrice").value),
+        sellingPrice: Number($("sellingPrice").value),
+        gstPercentage: Number($("gstPercentage").value),
+        quantity: Number($("quantity").value),
+        reorderLevel: Number($("reorderLevel").value),
+        expiryDate: $("expiryDate").value,
+        prescriptionRequired: $("prescriptionRequired").value === "true",
+        status: $("medicineStatus").value
     };
 
-    const integerFields = ["quantity", "reorderLevel"];
-
-    for (const field of integerFields) {
+    for (const field of ["quantity", "reorderLevel"]) {
         if (!Number.isInteger(medicine[field]) || medicine[field] < 0) {
             setMessage(
                 medicineFormMessage,
@@ -699,12 +809,8 @@ medicineForm.addEventListener("submit", async event => {
         }
     }
 
-    if (
-        medicine.purchasePrice < 0 ||
-        medicine.sellingPrice < 0 ||
-        medicine.gstPercentage < 0 ||
-        medicine.gstPercentage > 100
-    ) {
+    if (medicine.purchasePrice < 0 || medicine.sellingPrice < 0 ||
+        medicine.gstPercentage < 0 || medicine.gstPercentage > 100) {
         setMessage(
             medicineFormMessage,
             "Check the prices and GST percentage.",
@@ -713,10 +819,16 @@ medicineForm.addEventListener("submit", async event => {
         return;
     }
 
-    const submitButton = medicineForm.querySelector(
-        'button[type="submit"]'
-    );
+    if (!medicine.expiryDate) {
+        setMessage(
+            medicineFormMessage,
+            "Please enter the medicine expiry date.",
+            "error"
+        );
+        return;
+    }
 
+    const submitButton = medicineForm.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     setMessage(medicineFormMessage, "Saving medicine...");
 
@@ -730,9 +842,7 @@ medicineForm.addEventListener("submit", async event => {
         );
 
         closeMedicineModal();
-
         await refreshDashboard();
-
         showToast(data.message || "Medicine saved successfully.");
     } catch (error) {
         setMessage(medicineFormMessage, error.message, "error");
@@ -742,21 +852,19 @@ medicineForm.addEventListener("submit", async event => {
 });
 
 // ============================================
-// EDIT AND DELETE ACTIONS
+// EDIT AND DELETE MEDICINES
 // ============================================
 
-medicineTableBody.addEventListener("click", async event => {
+medicineTableBody?.addEventListener("click", async event => {
     const button = event.target.closest("button[data-action]");
-
     if (!button) return;
 
     const id = button.dataset.id;
     const action = button.dataset.action;
-
     const medicine = medicines.find(item => item._id === id);
 
     if (!medicine) {
-        showToast("Medicine not found in the current list. Refresh and try again.", true);
+        showToast("Medicine not found. Refresh and try again.", true);
         return;
     }
 
@@ -771,11 +879,9 @@ medicineTableBody.addEventListener("click", async event => {
             return;
         }
 
-        const confirmed = window.confirm(
-            `Are you sure you want to delete ${medicine.medicineName}, batch ${medicine.batchNumber}?`
-        );
-
-        if (!confirmed) return;
+        if (!window.confirm(
+            `Delete ${medicine.medicineName}, batch ${medicine.batchNumber}?`
+        )) return;
 
         try {
             const data = await apiRequest(
@@ -784,7 +890,6 @@ medicineTableBody.addEventListener("click", async event => {
             );
 
             await refreshDashboard();
-
             showToast(data.message || "Medicine deleted successfully.");
         } catch (error) {
             showToast(error.message, true);
@@ -793,37 +898,532 @@ medicineTableBody.addEventListener("click", async event => {
 });
 
 // ============================================
-// NAVIGATION
+// NEW SALE: LOAD SELLABLE MEDICINES
 // ============================================
 
-document.querySelectorAll(".nav-link").forEach(link => {
-    link.addEventListener("click", () => {
-        document.querySelectorAll(".nav-link").forEach(item => {
-            item.classList.remove("active");
+async function loadSaleMedicines() {
+    if (!authToken || !saleMedicineSelect) return;
+
+    setMessage(saleMessage, "Loading available medicines...");
+
+    try {
+        const data = await apiRequest("/medicines");
+
+        allSaleMedicines = (data.medicines || []).filter(medicine =>
+            medicine.status === "active" &&
+            Number(medicine.quantity) > 0 &&
+            !isExpired(medicine)
+        );
+
+        saleMedicineSelect.replaceChildren();
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "Select a medicine";
+        saleMedicineSelect.appendChild(placeholder);
+
+        for (const medicine of allSaleMedicines) {
+            const option = document.createElement("option");
+            option.value = medicine._id;
+            option.textContent =
+                `${medicine.medicineName} · Batch ${medicine.batchNumber} · ` +
+                `${formatCurrency(medicine.sellingPrice)} · Stock ${medicine.quantity}`;
+
+            saleMedicineSelect.appendChild(option);
+        }
+
+        updateSaleStockInfo();
+
+        setMessage(
+            saleMessage,
+            allSaleMedicines.length
+                ? ""
+                : "No active, unexpired medicines with stock are available."
+        );
+    } catch (error) {
+        setMessage(saleMessage, error.message, "error");
+    }
+}
+
+function updateSaleStockInfo() {
+    if (!saleStockInfo) return;
+
+    const medicine = allSaleMedicines.find(
+        item => item._id === saleMedicineSelect?.value
+    );
+
+    if (!medicine) {
+        saleStockInfo.textContent = "";
+        return;
+    }
+
+    saleStockInfo.textContent =
+        `Available stock: ${medicine.quantity} · ` +
+        `Price: ${formatCurrency(medicine.sellingPrice)} · ` +
+        `GST: ${Number(medicine.gstPercentage || 0)}%`;
+
+    if (saleQuantityInput) {
+        saleQuantityInput.max = String(medicine.quantity);
+        saleQuantityInput.value = "1";
+    }
+}
+
+saleMedicineSelect?.addEventListener("change", updateSaleStockInfo);
+
+// ============================================
+// ADD MEDICINE TO BILL
+// ============================================
+
+addSaleItemBtn?.addEventListener("click", () => {
+    setMessage(saleMessage, "");
+
+    const medicineId = saleMedicineSelect?.value;
+    const quantity = Number(saleQuantityInput?.value);
+    const medicine = allSaleMedicines.find(
+        item => item._id === medicineId
+    );
+
+    if (!medicine) {
+        setMessage(saleMessage, "Please select a valid medicine.", "error");
+        return;
+    }
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+        setMessage(
+            saleMessage,
+            "Quantity must be a positive whole number.",
+            "error"
+        );
+        return;
+    }
+
+    if (isExpired(medicine) || medicine.status !== "active") {
+        setMessage(saleMessage, "This medicine cannot be sold.", "error");
+        return;
+    }
+
+    const existing = saleCart.find(
+        item => item.medicineId === medicineId
+    );
+
+    const alreadyInCart = existing ? existing.quantity : 0;
+
+    if (alreadyInCart + quantity > Number(medicine.quantity)) {
+        setMessage(
+            saleMessage,
+            `Only ${medicine.quantity} unit(s) are currently available.`,
+            "error"
+        );
+        return;
+    }
+
+    if (existing) {
+        existing.quantity += quantity;
+    } else {
+        saleCart.push({
+            medicineId: medicine._id,
+            medicineName: medicine.medicineName,
+            batchNumber: medicine.batchNumber,
+            sellingPrice: Number(medicine.sellingPrice),
+            gstPercentage: Number(medicine.gstPercentage || 0),
+            quantity,
+            availableStock: Number(medicine.quantity)
+        });
+    }
+
+    renderSaleCart();
+    setMessage(saleMessage, "Medicine added to bill.", "success");
+});
+
+// ============================================
+// RENDER BILLING CART
+// ============================================
+
+function getSaleTotals() {
+    let subtotal = 0;
+    let gst = 0;
+
+    for (const item of saleCart) {
+        const lineSubtotal = item.sellingPrice * item.quantity;
+        subtotal += lineSubtotal;
+        gst += lineSubtotal * item.gstPercentage / 100;
+    }
+
+    return {
+        subtotal: Number(subtotal.toFixed(2)),
+        gst: Number(gst.toFixed(2)),
+        grandTotal: Number((subtotal + gst).toFixed(2))
+    };
+}
+
+function renderSaleCart() {
+    if (!saleCartTableBody) return;
+
+    saleCartTableBody.replaceChildren();
+
+    if (saleCart.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 7;
+        cell.className = "empty-state";
+        cell.textContent = "Your bill is empty. Add a medicine to begin.";
+
+        row.appendChild(cell);
+        saleCartTableBody.appendChild(row);
+    }
+
+    saleCart.forEach((item, index) => {
+        const lineSubtotal = item.sellingPrice * item.quantity;
+        const lineGST = lineSubtotal * item.gstPercentage / 100;
+        const row = document.createElement("tr");
+
+        const cells = [
+            escapeHTML(item.medicineName),
+            escapeHTML(item.batchNumber || "—"),
+            formatCurrency(item.sellingPrice),
+            String(item.quantity),
+            `${item.gstPercentage}%`,
+            formatCurrency(lineSubtotal + lineGST),
+            `<button type="button" class="action-btn delete-btn"
+                data-cart-remove="${index}">Remove</button>`
+        ];
+
+        for (const content of cells) {
+            const cell = document.createElement("td");
+            cell.innerHTML = content;
+            row.appendChild(cell);
+        }
+
+        saleCartTableBody.appendChild(row);
+    });
+
+    const totals = getSaleTotals();
+
+    if (saleSubtotal) {
+        saleSubtotal.textContent = formatCurrency(totals.subtotal);
+    }
+
+    if (saleGST) {
+        saleGST.textContent = formatCurrency(totals.gst);
+    }
+
+    if (saleGrandTotal) {
+        saleGrandTotal.textContent = formatCurrency(totals.grandTotal);
+    }
+
+    if (completeSaleBtn) {
+        completeSaleBtn.disabled = saleCart.length === 0;
+    }
+}
+
+saleCartTableBody?.addEventListener("click", event => {
+    const button = event.target.closest("[data-cart-remove]");
+    if (!button) return;
+
+    const index = Number(button.dataset.cartRemove);
+
+    if (Number.isInteger(index) && index >= 0 && index < saleCart.length) {
+        saleCart.splice(index, 1);
+        renderSaleCart();
+        setMessage(saleMessage, "Item removed from bill.");
+    }
+});
+
+// ============================================
+// CLEAR CURRENT BILL
+// ============================================
+
+function clearCurrentSale() {
+    saleCart = [];
+    renderSaleCart();
+    setMessage(saleMessage, "");
+
+    if (saleInvoiceResult) {
+        saleInvoiceResult.hidden = true;
+    }
+}
+
+clearSaleBtn?.addEventListener("click", () => {
+    if (saleCart.length &&
+        !window.confirm("Clear all items from this bill?")) return;
+
+    clearCurrentSale();
+});
+
+// ============================================
+// COMPLETE SALE
+// ============================================
+
+completeSaleBtn?.addEventListener("click", async () => {
+    if (!authToken) {
+        setMessage(saleMessage, "Please log in before billing.", "error");
+        return;
+    }
+
+    if (saleCart.length === 0) {
+        setMessage(saleMessage, "Add at least one medicine to the bill.", "error");
+        return;
+    }
+
+    for (const item of saleCart) {
+        const medicine = allSaleMedicines.find(
+            entry => entry._id === item.medicineId
+        );
+
+        if (!medicine || medicine.status !== "active" ||
+            isExpired(medicine) ||
+            Number(medicine.quantity) < item.quantity) {
+            setMessage(
+                saleMessage,
+                `${item.medicineName} is expired, unavailable, or has insufficient stock. Reload available medicines.`,
+                "error"
+            );
+
+            await loadSaleMedicines();
+            return;
+        }
+    }
+
+    const paymentMethod = salePaymentMethod?.value || "cash";
+
+    if (!["cash", "upi", "card"].includes(paymentMethod)) {
+        setMessage(saleMessage, "Please select a valid payment method.", "error");
+        return;
+    }
+
+    completeSaleBtn.disabled = true;
+    setMessage(saleMessage, "Processing sale...");
+
+    try {
+        const payload = {
+            items: saleCart.map(item => ({
+                medicineId: item.medicineId,
+                quantity: item.quantity
+            })),
+            paymentMethod
+        };
+
+        const data = await apiRequest("/sales", {
+            method: "POST",
+            body: JSON.stringify(payload)
         });
 
-        link.classList.add("active");
+        const sale = data.sale || data;
+        const invoiceNumber = sale.invoiceNumber || "Invoice created";
+        const grandTotal = Number(
+            sale.grandTotal ?? getSaleTotals().grandTotal
+        );
 
-        const target = link.getAttribute("href");
-
-        const pageTitle = document.getElementById("pageTitle");
-
-        if (target === "#inventory") {
-            pageTitle.textContent = "Inventory";
-        } else if (target === "#alerts") {
-            pageTitle.textContent = "Stock Alerts";
-        } else {
-            pageTitle.textContent = "Dashboard";
+        if (completedInvoiceNumber) {
+            completedInvoiceNumber.textContent = invoiceNumber;
         }
+
+        if (completedInvoiceTotal) {
+            completedInvoiceTotal.textContent = formatCurrency(grandTotal);
+        }
+
+        if (saleInvoiceResult) {
+            saleInvoiceResult.hidden = false;
+        }
+
+        saleCart = [];
+        renderSaleCart();
+
+        await refreshDashboard();
+        await loadSaleMedicines();
+
+        setMessage(
+            saleMessage,
+            data.message || "Sale completed successfully.",
+            "success"
+        );
+
+        showToast("Sale completed successfully.");
+    } catch (error) {
+        setMessage(saleMessage, error.message, "error");
+    } finally {
+        completeSaleBtn.disabled = saleCart.length === 0;
+    }
+});
+
+// ============================================
+// PRINT INVOICE
+// ============================================
+
+printInvoiceBtn?.addEventListener("click", () => {
+    window.print();
+});
+
+newSaleBtn?.addEventListener("click", async () => {
+    clearCurrentSale();
+
+    if (salePaymentMethod) {
+        salePaymentMethod.value = "cash";
+    }
+
+    await loadSaleMedicines();
+});
+
+// ============================================
+// SALES HISTORY
+// ============================================
+
+async function loadSales() {
+    if (!authToken || !salesTableBody) return;
+
+    setMessage(salesMessage, "Loading sales history...");
+
+    if (salesTableCount) {
+        salesTableCount.textContent = "Loading...";
+    }
+
+    try {
+        const data = await apiRequest("/sales");
+        sales = data.sales || [];
+
+        renderSalesTable();
+        setMessage(salesMessage, "");
+    } catch (error) {
+        salesTableBody.replaceChildren();
+
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 8;
+        cell.className = "empty-state";
+        cell.textContent = error.message;
+
+        row.appendChild(cell);
+        salesTableBody.appendChild(row);
+
+        setMessage(
+            salesMessage,
+            `Unable to load sales: ${error.message}`,
+            "error"
+        );
+
+        if (salesTableCount) {
+            salesTableCount.textContent = "Unable to load sales";
+        }
+    }
+}
+
+function renderSalesTable() {
+    if (!salesTableBody) return;
+
+    salesTableBody.replaceChildren();
+
+    const searchTerm = salesSearchInput?.value.trim().toLowerCase() || "";
+    const paymentMethod = salesPaymentFilter?.value || "";
+
+    const filteredSales = sales.filter(sale => {
+        const invoice = String(sale.invoiceNumber || "").toLowerCase();
+
+        const medicineNames = (sale.items || [])
+            .map(item => item.medicineName || "")
+            .join(" ")
+            .toLowerCase();
+
+        return (
+            (!searchTerm ||
+                invoice.includes(searchTerm) ||
+                medicineNames.includes(searchTerm)) &&
+            (!paymentMethod || sale.paymentMethod === paymentMethod)
+        );
     });
+
+    const completedSales = sales.filter(
+        sale => sale.status === "completed"
+    );
+
+    if (totalSalesCount) {
+        totalSalesCount.textContent = completedSales.length;
+    }
+
+    if (totalSalesValue) {
+        totalSalesValue.textContent = formatCurrency(
+            completedSales.reduce(
+                (sum, sale) => sum + Number(sale.grandTotal || 0),
+                0
+            )
+        );
+    }
+
+    if (salesTableCount) {
+        salesTableCount.textContent =
+            `${filteredSales.length} ${filteredSales.length === 1 ? "sale" : "sales"}`;
+    }
+
+    if (filteredSales.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+
+        cell.colSpan = 8;
+        cell.className = "empty-state";
+        cell.textContent = sales.length === 0
+            ? "No sales recorded yet."
+            : "No sales match your search.";
+
+        row.appendChild(cell);
+        salesTableBody.appendChild(row);
+        return;
+    }
+
+    for (const sale of filteredSales) {
+        const row = document.createElement("tr");
+
+        const medicineSummary = (sale.items || [])
+            .map(item =>
+                `${escapeHTML(item.medicineName)} × ${Number(item.quantity)}`
+            )
+            .join(", ");
+
+        const statusClass = sale.status === "completed"
+            ? "status-active"
+            : "status-inactive";
+
+        const cells = [
+            `<strong>${escapeHTML(sale.invoiceNumber || "—")}</strong>`,
+            medicineSummary || "—",
+            formatCurrency(sale.subtotal),
+            formatCurrency(sale.totalGST),
+            `<strong>${formatCurrency(sale.grandTotal)}</strong>`,
+            escapeHTML(sale.paymentMethod?.toUpperCase() || "CASH"),
+            formatDate(sale.createdAt),
+            `<span class="status-badge ${statusClass}">${escapeHTML(sale.status || "completed")}</span>`
+        ];
+
+        for (const content of cells) {
+            const cell = document.createElement("td");
+            cell.innerHTML = content;
+            row.appendChild(cell);
+        }
+
+        salesTableBody.appendChild(row);
+    }
+}
+
+salesSearchInput?.addEventListener("input", renderSalesTable);
+salesPaymentFilter?.addEventListener("change", renderSalesTable);
+
+$("refreshSalesBtn")?.addEventListener("click", async () => {
+    await loadSales();
+    showToast("Sales history refreshed.");
 });
 
 // ============================================
 // INITIAL PAGE STATE
 // ============================================
 
-loginSection.hidden = false;
-dashboardSection.hidden = true;
-medicineModal.hidden = true;
+if (loginSection) loginSection.hidden = false;
+if (appSections) appSections.hidden = true;
+if (dashboardSection) dashboardSection.hidden = true;
+if (salesSection) salesSection.hidden = true;
+if (newSaleSection) newSaleSection.hidden = true;
+if (medicineModal) medicineModal.hidden = true;
+if (saleInvoiceResult) saleInvoiceResult.hidden = true;
+
+renderSaleCart();
 
 console.log("MediVault frontend loaded successfully.");
