@@ -992,3 +992,14 @@ tbody tr:hover {
         text-decoration: none !important;
     }
 }
+
+
+/* Purchase Management */
+.purchase-form { margin: 20px 0 28px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.purchase-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.purchase-fields > div { display: flex; flex-direction: column; gap: 6px; }
+.purchase-fields label { font-weight: 600; }
+.purchase-fields input, .purchase-fields select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+.purchase-total { font-weight: 700; font-size: 18px; margin: 14px 0; }
+@media (max-width: 680px) { .purchase-fields { grid-template-columns: 1fr; } }
+@media print { #purchasesSection { display: none !important; } }
