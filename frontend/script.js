@@ -2461,3 +2461,174 @@ showPage = function(page) {
 };
 
 console.log("Supplier Management module loaded.");
+
+
+/* ============================================
+   PURCHASE MANAGEMENT MODULE
+============================================ */
+let purchaseSuppliers = [];
+let purchaseMedicines = [];
+let purchaseRequestId = null;
+const purchasesSection = $("purchasesSection");
+const purchaseForm = $("purchaseForm");
+const purchaseSupplier = $("purchaseSupplier");
+const purchaseMedicine = $("purchaseMedicine");
+const purchaseQuantity = $("purchaseQuantity");
+const purchaseUnitCost = $("purchaseUnitCost");
+const purchaseMessage = $("purchaseMessage");
+const purchaseTableBody = $("purchaseTableBody");
+
+function makePurchaseRequestId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return "purchase_" + Date.now() + "_" + Math.random().toString(36).slice(2, 12);
+}
+
+function purchaseOption(select, value, label) {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
+}
+
+function updatePurchasePreview() {
+    const medicine = purchaseMedicines.find(m => m._id === purchaseMedicine?.value);
+    $("purchaseBatchInfo").textContent = medicine
+        ? "Batch: " + medicine.batchNumber + " | Expiry: " + formatDate(medicine.expiryDate) +
+          " | Current stock: " + medicine.quantity
+        : "Select a medicine to see its batch and expiry date.";
+    const quantity = Number(purchaseQuantity?.value) || 0;
+    const cost = Number(purchaseUnitCost?.value) || 0;
+    $("purchaseTotal").textContent = "Total: " + formatCurrency(quantity * cost);
+}
+
+async function loadPurchasePage() {
+    if (!authToken || currentUser?.role !== "admin") return;
+    setMessage(purchaseMessage, "Loading purchase information...");
+    try {
+        const [suppliersData, medicinesData, purchasesData] = await Promise.all([
+            apiRequest("/suppliers"),
+            apiRequest("/medicines"),
+            apiRequest("/purchases")
+        ]);
+        purchaseSuppliers = (suppliersData.suppliers || []).filter(s => s.status === "active");
+        purchaseMedicines = (medicinesData.medicines || []).filter(m => m.status === "active");
+        const oldSupplier = purchaseSupplier.value;
+        const oldMedicine = purchaseMedicine.value;
+        purchaseSupplier.replaceChildren();
+        purchaseMedicine.replaceChildren();
+        purchaseOption(purchaseSupplier, "", "Select supplier");
+        purchaseOption(purchaseMedicine, "", "Select medicine batch");
+        purchaseSuppliers.forEach(s => purchaseOption(purchaseSupplier, s._id, s.supplierName));
+        purchaseMedicines.forEach(m => purchaseOption(purchaseMedicine, m._id,
+            m.medicineName + " — " + m.batchNumber + " (" + m.quantity + " in stock)"));
+        if (purchaseSuppliers.some(s => s._id === oldSupplier)) purchaseSupplier.value = oldSupplier;
+        if (purchaseMedicines.some(m => m._id === oldMedicine)) purchaseMedicine.value = oldMedicine;
+        renderPurchaseHistory(purchasesData.purchases || []);
+        updatePurchasePreview();
+        setMessage(purchaseMessage, "");
+    } catch (error) {
+        setMessage(purchaseMessage, error.message, "error");
+        showToast(error.message, true);
+    }
+}
+
+function renderPurchaseHistory(purchases) {
+    purchaseTableBody.replaceChildren();
+    if (!purchases.length) {
+        const row = purchaseTableBody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 7;
+        cell.textContent = "No purchases recorded yet.";
+        return;
+    }
+    for (const purchase of purchases) {
+        const row = purchaseTableBody.insertRow();
+        const values = [
+            purchase.purchaseNumber,
+            formatDate(purchase.createdAt),
+            purchase.supplier?.supplierName || "Unknown supplier",
+            purchase.medicineName + " / " + purchase.batchNumber,
+            purchase.quantity,
+            formatCurrency(purchase.unitCost),
+            formatCurrency(purchase.totalCost)
+        ];
+        values.forEach(value => {
+            const cell = row.insertCell();
+            cell.textContent = String(value);
+        });
+    }
+}
+
+purchaseMedicine?.addEventListener("change", () => {
+    const medicine = purchaseMedicines.find(m => m._id === purchaseMedicine.value);
+    if (medicine) purchaseUnitCost.value = medicine.purchasePrice;
+    purchaseRequestId = null;
+    updatePurchasePreview();
+});
+purchaseQuantity?.addEventListener("input", () => { purchaseRequestId = null; updatePurchasePreview(); });
+purchaseUnitCost?.addEventListener("input", () => { purchaseRequestId = null; updatePurchasePreview(); });
+purchaseSupplier?.addEventListener("change", () => { purchaseRequestId = null; });
+$("refreshPurchasesBtn")?.addEventListener("click", loadPurchasePage);
+
+purchaseForm?.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (currentUser?.role !== "admin") return;
+    const quantity = Number(purchaseQuantity.value);
+    const unitCost = Number(purchaseUnitCost.value);
+    if (!Number.isSafeInteger(quantity) || quantity < 1 ||
+        !Number.isFinite(unitCost) || unitCost < 0 || !Number.isInteger(Math.round(unitCost * 10000) / 100)) {
+        setMessage(purchaseMessage, "Enter a valid whole-number quantity and price with up to two decimal places.", "error");
+        return;
+    }
+    const button = $("savePurchaseBtn");
+    button.disabled = true;
+    if (!purchaseRequestId) purchaseRequestId = makePurchaseRequestId();
+    setMessage(purchaseMessage, "Recording purchase...");
+    try {
+        await apiRequest("/purchases", {
+            method: "POST",
+            body: JSON.stringify({
+                supplierId: purchaseSupplier.value,
+                medicineId: purchaseMedicine.value,
+                quantity,
+                unitCost,
+                requestId: purchaseRequestId
+            })
+        });
+        purchaseRequestId = null;
+        purchaseForm.reset();
+        setMessage(purchaseMessage, "Purchase recorded. Medicine stock increased.", "success");
+        showToast("Purchase recorded successfully.");
+        await loadPurchasePage();
+        await loadMedicines();
+    } catch (error) {
+        setMessage(purchaseMessage, error.message, "error");
+        showToast(error.message, true);
+    } finally {
+        button.disabled = false;
+    }
+});
+
+// Preserve existing supplier and dashboard navigation.
+const previousPurchaseShowPage = showPage;
+showPage = function(page) {
+    if (purchasesSection) purchasesSection.hidden = page !== "purchases";
+    if (page === "purchases") {
+        if (!authToken) return;
+        if (currentUser?.role !== "admin") {
+            showToast("Only admins can manage purchases.", true);
+            return previousPurchaseShowPage("dashboard");
+        }
+        previousPurchaseShowPage("dashboard");
+        if (dashboardSection) dashboardSection.hidden = true;
+        if (suppliersSection) suppliersSection.hidden = true;
+        $("pageTitle").textContent = "Purchase Management";
+        document.querySelectorAll(".nav-link").forEach(link => {
+            link.classList.toggle("active", link.dataset.page === "purchases");
+        });
+        loadPurchasePage();
+        return;
+    }
+    previousPurchaseShowPage(page);
+};
+if (purchasesSection) purchasesSection.hidden = true;
