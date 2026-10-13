@@ -49,6 +49,10 @@
                 ▧ Sales History
             </a>
 
+            <a href="#purchases" class="nav-link" data-page="purchases">
+                ▣ Purchase Management
+            </a>
+
             <a href="#suppliers" class="nav-link" data-page="suppliers">
                 ◈ Supplier Management
             </a>
@@ -705,6 +709,41 @@
             <!-- ============================================
                  SUPPLIER MANAGEMENT
             ============================================ -->
+
+            <!-- PURCHASE MANAGEMENT -->
+            <section id="purchasesSection" class="panel" hidden>
+                <div class="section-heading">
+                    <div>
+                        <h2>Purchase Management</h2>
+                        <p>Receive stock from suppliers and track purchase history.</p>
+                    </div>
+                    <button type="button" id="refreshPurchasesBtn" class="secondary-btn">Refresh History</button>
+                </div>
+                <form id="purchaseForm" class="purchase-form">
+                    <div class="purchase-fields">
+                        <div><label for="purchaseSupplier">Supplier</label>
+                            <select id="purchaseSupplier" required><option value="">Select supplier</option></select></div>
+                        <div><label for="purchaseMedicine">Existing medicine batch</label>
+                            <select id="purchaseMedicine" required><option value="">Select medicine</option></select></div>
+                        <div><label for="purchaseQuantity">Quantity received</label>
+                            <input id="purchaseQuantity" type="number" min="1" step="1" required></div>
+                        <div><label for="purchaseUnitCost">Unit purchase price (₹)</label>
+                            <input id="purchaseUnitCost" type="number" min="0" step="0.01" required></div>
+                    </div>
+                    <p id="purchaseBatchInfo" class="message">Select a medicine to see its batch and expiry date.</p>
+                    <p id="purchaseTotal" class="purchase-total">Total: ₹0.00</p>
+                    <p id="purchaseMessage" class="message" role="status"></p>
+                    <button type="submit" id="savePurchaseBtn" class="primary-btn">Record Purchase &amp; Update Stock</button>
+                </form>
+                <h3>Purchase History</h3>
+                <div class="table-container">
+                    <table>
+                        <thead><tr><th>Purchase ID</th><th>Date</th><th>Supplier</th><th>Medicine / Batch</th><th>Qty</th><th>Unit Cost</th><th>Total</th></tr></thead>
+                        <tbody id="purchaseTableBody"><tr><td colspan="7">Open this page to load purchases.</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
             <section id="suppliersSection" class="panel" hidden>
 
                 <div class="section-heading">
