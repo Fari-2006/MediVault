@@ -1003,3 +1003,38 @@ tbody tr:hover {
 .purchase-total { font-weight: 700; font-size: 18px; margin: 14px 0; }
 @media (max-width: 680px) { .purchase-fields { grid-template-columns: 1fr; } }
 @media print { #purchasesSection { display: none !important; } }
+
+
+/* Purchase receipt preview and print */
+.purchase-invoice { margin: 24px 0; padding: 22px; border: 1px solid var(--border); border-radius: 12px; background: #fff; color: #202b3c; }
+.purchase-invoice-toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+.purchase-invoice-table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+.purchase-invoice-table th, .purchase-invoice-table td { text-align: left; border: 1px solid #d1d5db; padding: 11px 13px; overflow-wrap: anywhere; }
+.purchase-invoice-table th { width: 38%; background: #f5f7fb; }
+.purchase-invoice-footer { margin-top: 20px; font-size: 12px; color: #667085; }
+@media print {
+    body.printing-purchase .app,
+    body.printing-purchase .main-content,
+    body.printing-purchase #appSections { display: block !important; }
+    body.printing-purchase .sidebar,
+    body.printing-purchase .topbar,
+    body.printing-purchase .footer,
+    body.printing-purchase #dashboardSection,
+    body.printing-purchase #salesSection,
+    body.printing-purchase #newSaleSection,
+    body.printing-purchase #suppliersSection,
+    body.printing-purchase #purchaseForm,
+    body.printing-purchase #purchasesSection > .section-heading,
+    body.printing-purchase #purchasesSection > h3,
+    body.printing-purchase #purchasesSection > .table-container,
+    body.printing-purchase .purchase-invoice-toolbar,
+    body.printing-purchase .toast { display: none !important; }
+    body.printing-purchase #purchasesSection,
+    body.printing-purchase #purchaseInvoiceResult { display: block !important; visibility: visible !important; }
+    body.printing-purchase #purchasesSection { border: 0 !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+    body.printing-purchase #purchaseInvoiceResult { border: 0 !important; padding: 0 !important; margin: 0 !important; box-shadow: none !important; }
+    body.printing-purchase #purchaseInvoiceResult * { visibility: visible !important; }
+    body.printing-purchase .purchase-invoice-table { width: 100% !important; border-collapse: collapse !important; }
+    body.printing-purchase .purchase-invoice-table th,
+    body.printing-purchase .purchase-invoice-table td { border: 1px solid #d1d5db !important; padding: 10px !important; color: #111827 !important; }
+}
