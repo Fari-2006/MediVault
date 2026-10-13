@@ -1,18 +1,23 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediVault | Pharmacy Management</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
 <div class="app">
 
-    <!-- SIDEBAR -->
+    <!-- ============================================
+         SIDEBAR
+    ============================================ -->
     <aside class="sidebar">
+
         <div class="brand">
             <div class="brand-icon">✚</div>
             <div>
@@ -24,42 +29,87 @@
         <p class="menu-label">WORKSPACE</p>
 
         <nav class="navigation">
-            <a href="#dashboard" class="nav-link active" data-page="dashboard">▦ Dashboard</a>
-            <a href="#inventory" class="nav-link" data-page="inventory">▤ Inventory</a>
-            <a href="#alerts" class="nav-link" data-page="alerts">⚠ Stock Alerts</a>
-            <a href="#new-sale" class="nav-link" data-page="new-sale">＋ New Sale / Billing</a>
-            <a href="#sales" class="nav-link" data-page="sales">▧ Sales History</a>
+            <a href="#dashboard" class="nav-link active" data-page="dashboard">
+                ▦ Dashboard
+            </a>
+
+            <a href="#inventory" class="nav-link" data-page="inventory">
+                ▤ Inventory
+            </a>
+
+            <a href="#alerts" class="nav-link" data-page="alerts">
+                ⚠ Stock Alerts
+            </a>
+
+            <a href="#new-sale" class="nav-link" data-page="new-sale">
+                ＋ New Sale / Billing
+            </a>
+
+            <a href="#sales" class="nav-link" data-page="sales">
+                ▧ Sales History
+            </a>
+
+            <a href="#suppliers" class="nav-link" data-page="suppliers">
+                ◈ Supplier Management
+            </a>
         </nav>
 
         <div class="sidebar-bottom">
             <div class="user-avatar">F</div>
+
             <div class="user-details">
                 <strong id="userName">Pharmacy User</strong>
                 <span id="userRole">Not logged in</span>
             </div>
-            <button id="logoutBtn" class="logout-btn" title="Logout">↪</button>
+
+            <button
+                id="logoutBtn"
+                class="logout-btn"
+                type="button"
+                title="Logout"
+            >
+                ↪
+            </button>
         </div>
+
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- ============================================
+         MAIN CONTENT
+    ============================================ -->
     <main class="main-content">
 
+        <!-- TOPBAR -->
         <header class="topbar">
+
             <div>
                 <p class="eyebrow">PHARMACY WORKSPACE</p>
                 <h1 id="pageTitle">Dashboard</h1>
-                <p class="subtitle">Manage your pharmacy inventory in one place.</p>
+                <p class="subtitle">
+                    Manage your pharmacy inventory in one place.
+                </p>
             </div>
 
             <div class="topbar-actions">
                 <span class="status-indicator"></span>
                 <span class="system-status">MediVault</span>
-                <button id="refreshBtn" class="secondary-btn">↻ Refresh</button>
+
+                <button
+                    id="refreshBtn"
+                    class="secondary-btn"
+                    type="button"
+                >
+                    ↻ Refresh
+                </button>
             </div>
+
         </header>
 
-        <!-- LOGIN -->
+        <!-- ============================================
+             LOGIN
+        ============================================ -->
         <section id="loginSection" class="panel login-panel">
+
             <div class="section-heading">
                 <div>
                     <h2>Welcome to MediVault</h2>
@@ -68,7 +118,9 @@
             </div>
 
             <form id="loginForm" class="login-form">
+
                 <label for="email">Email address</label>
+
                 <input
                     type="email"
                     id="email"
@@ -78,6 +130,7 @@
                 >
 
                 <label for="password">Password</label>
+
                 <input
                     type="password"
                     id="password"
@@ -86,15 +139,28 @@
                     required
                 >
 
-                <button type="submit" class="primary-btn">Log In</button>
-                <p id="loginMessage" class="message" role="status"></p>
+                <button type="submit" class="primary-btn">
+                    Log In
+                </button>
+
+                <p
+                    id="loginMessage"
+                    class="message"
+                    role="status"
+                ></p>
+
             </form>
+
         </section>
 
-        <!-- APPLICATION -->
+        <!-- ============================================
+             APPLICATION
+        ============================================ -->
         <div id="appSections" hidden>
 
-            <!-- DASHBOARD -->
+            <!-- ============================================
+                 DASHBOARD
+            ============================================ -->
             <section id="dashboardSection">
 
                 <div class="stats-grid">
@@ -105,6 +171,7 @@
                             <span>Total Medicines</span>
                             <span class="stat-icon blue">▤</span>
                         </div>
+
                         <h2 id="totalMedicines">—</h2>
                         <p>Medicine records</p>
                     </article>
@@ -115,6 +182,7 @@
                             <span>Total Units in Stock</span>
                             <span class="stat-icon purple">▥</span>
                         </div>
+
                         <h2 id="totalUnits">—</h2>
                         <p>Units across all records</p>
                     </article>
@@ -125,6 +193,7 @@
                             <span>Low Stock</span>
                             <span class="stat-icon orange">⚠</span>
                         </div>
+
                         <h2 id="lowStockCount">—</h2>
                         <p>Records needing attention</p>
                     </article>
@@ -135,16 +204,18 @@
                             <span>Near Expiry</span>
                             <span class="stat-icon red">◷</span>
                         </div>
+
                         <h2 id="nearExpiryCount">—</h2>
                         <p>Expiring within 90 days</p>
                     </article>
 
-                    <!-- NEW: EXPIRED MEDICINES -->
+                    <!-- EXPIRED MEDICINES -->
                     <article class="stat-card">
                         <div class="stat-top">
                             <span>Expired Medicines</span>
                             <span class="stat-icon red">⚠</span>
                         </div>
+
                         <h2 id="expiredMedicinesCount">—</h2>
                         <p>Medicine records past expiry date</p>
                     </article>
@@ -155,6 +226,7 @@
                             <span>Today's Sales</span>
                             <span class="stat-icon blue">▧</span>
                         </div>
+
                         <h2 id="todaySalesCount">—</h2>
                         <p>Completed transactions today</p>
                     </article>
@@ -165,25 +237,35 @@
                             <span>Today's Revenue</span>
                             <span class="stat-icon purple">₹</span>
                         </div>
+
                         <h2 id="todayRevenue">—</h2>
                         <p>Revenue from completed sales today</p>
                     </article>
 
                 </div>
 
-                <!-- INVENTORY -->
+                <!-- ============================================
+                     INVENTORY
+                ============================================ -->
                 <section id="inventory" class="panel">
+
                     <div class="section-heading inventory-heading">
                         <div>
                             <h2>Medicine Inventory</h2>
                             <p>View and search your saved medicines.</p>
                         </div>
-                        <button id="addMedicineBtn" class="primary-btn">
+
+                        <button
+                            id="addMedicineBtn"
+                            class="primary-btn"
+                            type="button"
+                        >
                             + Add Medicine
                         </button>
                     </div>
 
                     <div class="toolbar">
+
                         <input
                             type="search"
                             id="searchInput"
@@ -199,10 +281,12 @@
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
                         </select>
+
                     </div>
 
                     <div class="table-wrapper">
                         <table>
+
                             <thead>
                                 <tr>
                                     <th>MEDICINE</th>
@@ -214,6 +298,7 @@
                                     <th>ACTION</th>
                                 </tr>
                             </thead>
+
                             <tbody id="medicineTableBody">
                                 <tr>
                                     <td colspan="7" class="empty-state">
@@ -221,6 +306,7 @@
                                     </td>
                                 </tr>
                             </tbody>
+
                         </table>
                     </div>
 
@@ -228,10 +314,14 @@
                         <span id="tableCount">0 medicines</span>
                         <span>Inventory records</span>
                     </div>
+
                 </section>
 
-                <!-- STOCK ALERTS -->
+                <!-- ============================================
+                     STOCK ALERTS
+                ============================================ -->
                 <section id="alerts" class="panel alerts-panel">
+
                     <div class="section-heading">
                         <div>
                             <h2>Inventory Alerts</h2>
@@ -243,34 +333,43 @@
 
                         <!-- LOW STOCK ALERT -->
                         <div class="alert-box">
+
                             <div class="alert-heading">
                                 <span class="alert-symbol orange">!</span>
                                 <h3>Low Stock</h3>
                             </div>
 
-                            <p>Medicines at or below their reorder level.</p>
+                            <p>
+                                Medicines at or below their reorder level.
+                            </p>
 
                             <ul id="lowStockList">
                                 <li>Log in to view alerts.</li>
                             </ul>
+
                         </div>
 
                         <!-- NEAR EXPIRY ALERT -->
                         <div class="alert-box">
+
                             <div class="alert-heading">
                                 <span class="alert-symbol red">◷</span>
                                 <h3>Near Expiry</h3>
                             </div>
 
-                            <p>Medicines expiring within the next 90 days.</p>
+                            <p>
+                                Medicines expiring within the next 90 days.
+                            </p>
 
                             <ul id="nearExpiryList">
                                 <li>Log in to view alerts.</li>
                             </ul>
+
                         </div>
 
-                        <!-- NEW: EXPIRED MEDICINES ALERT -->
+                        <!-- EXPIRED MEDICINES ALERT -->
                         <div class="alert-box">
+
                             <div class="alert-heading">
                                 <span class="alert-symbol red">!</span>
                                 <h3>Expired Medicines</h3>
@@ -284,14 +383,18 @@
                             <ul id="expiredMedicinesList">
                                 <li>Log in to view expired medicines.</li>
                             </ul>
+
                         </div>
 
                     </div>
+
                 </section>
 
             </section>
 
-            <!-- NEW SALE / BILLING -->
+            <!-- ============================================
+                 NEW SALE / BILLING
+            ============================================ -->
             <section id="newSaleSection" class="panel" hidden>
 
                 <div class="section-heading">
@@ -303,15 +406,21 @@
 
                 <!-- SELECT MEDICINE -->
                 <div class="panel">
+
                     <h3>Add Medicine to Bill</h3>
+
                     <p>
                         Select an available, unexpired medicine
                         and enter the quantity.
                     </p>
 
                     <div class="toolbar">
+
                         <div class="form-field">
-                            <label for="saleMedicineSelect">Medicine</label>
+                            <label for="saleMedicineSelect">
+                                Medicine
+                            </label>
+
                             <select id="saleMedicineSelect" required>
                                 <option value="">
                                     Loading medicines...
@@ -320,7 +429,10 @@
                         </div>
 
                         <div class="form-field">
-                            <label for="saleQuantityInput">Quantity</label>
+                            <label for="saleQuantityInput">
+                                Quantity
+                            </label>
+
                             <input
                                 type="number"
                                 id="saleQuantityInput"
@@ -338,6 +450,7 @@
                         >
                             + Add to Bill
                         </button>
+
                     </div>
 
                     <p
@@ -345,6 +458,7 @@
                         class="message"
                         role="status"
                     ></p>
+
                 </div>
 
                 <!-- BILL ITEMS -->
@@ -360,6 +474,7 @@
 
                 <div class="table-wrapper">
                     <table>
+
                         <thead>
                             <tr>
                                 <th>MEDICINE</th>
@@ -380,17 +495,20 @@
                                 </td>
                             </tr>
                         </tbody>
+
                     </table>
                 </div>
 
                 <!-- BILL TOTALS -->
                 <div class="panel">
+
                     <div class="form-grid">
 
                         <div class="form-field">
                             <label for="salePaymentMethod">
                                 Payment method
                             </label>
+
                             <select id="salePaymentMethod">
                                 <option value="cash">Cash</option>
                                 <option value="upi">UPI</option>
@@ -422,6 +540,7 @@
                     ></p>
 
                     <div class="modal-actions">
+
                         <button
                             type="button"
                             id="clearSaleBtn"
@@ -437,11 +556,14 @@
                         >
                             Complete Sale
                         </button>
+
                     </div>
+
                 </div>
 
                 <!-- SUCCESSFUL INVOICE -->
                 <div id="saleInvoiceResult" class="panel" hidden>
+
                     <h2>Sale Completed Successfully</h2>
                     <p>Your sale has been saved.</p>
 
@@ -470,14 +592,18 @@
                     >
                         Start New Sale
                     </button>
+
                 </div>
 
             </section>
 
-            <!-- SALES HISTORY -->
+            <!-- ============================================
+                 SALES HISTORY
+            ============================================ -->
             <section id="salesSection" class="panel" hidden>
 
                 <div class="section-heading">
+
                     <div>
                         <h2>Sales History</h2>
                         <p>
@@ -492,6 +618,7 @@
                     >
                         ↻ Refresh Sales
                     </button>
+
                 </div>
 
                 <div class="stats-grid sales-stats">
@@ -519,6 +646,7 @@
                 </div>
 
                 <div class="toolbar">
+
                     <input
                         type="search"
                         id="salesSearchInput"
@@ -531,10 +659,12 @@
                         <option value="upi">UPI</option>
                         <option value="card">Card</option>
                     </select>
+
                 </div>
 
                 <div class="table-wrapper">
                     <table>
+
                         <thead>
                             <tr>
                                 <th>INVOICE</th>
@@ -555,6 +685,7 @@
                                 </td>
                             </tr>
                         </tbody>
+
                     </table>
                 </div>
 
@@ -571,9 +702,100 @@
 
             </section>
 
+            <!-- ============================================
+                 SUPPLIER MANAGEMENT
+            ============================================ -->
+            <section id="suppliersSection" class="panel" hidden>
+
+                <div class="section-heading">
+
+                    <div>
+                        <h2>Supplier Management</h2>
+                        <p>
+                            Manage pharmacy medicine suppliers and contacts.
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="addSupplierBtn"
+                        class="primary-btn"
+                    >
+                        + Add Supplier
+                    </button>
+
+                </div>
+
+                <!-- SUPPLIER FILTERS -->
+                <div class="toolbar">
+
+                    <input
+                        type="search"
+                        id="supplierSearchInput"
+                        placeholder="Search supplier, contact, phone..."
+                    >
+
+                    <select id="supplierStatusFilter">
+                        <option value="">All statuses</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+
+                    <button
+                        type="button"
+                        id="refreshSuppliersBtn"
+                        class="secondary-btn"
+                    >
+                        ↻ Refresh
+                    </button>
+
+                </div>
+
+                <!-- SUPPLIER TABLE -->
+                <div class="table-wrapper">
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>SUPPLIER NAME</th>
+                                <th>CONTACT PERSON</th>
+                                <th>PHONE</th>
+                                <th>EMAIL</th>
+                                <th>ADDRESS</th>
+                                <th>STATUS</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="supplierTableBody">
+                            <tr>
+                                <td colspan="7" class="empty-state">
+                                    No suppliers loaded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+
+                    </table>
+                </div>
+
+                <div class="table-footer">
+                    <span id="supplierTableCount">0 suppliers</span>
+                    <span>Supplier records</span>
+                </div>
+
+                <p
+                    id="supplierMessage"
+                    class="message"
+                    role="status"
+                ></p>
+
+            </section>
+
         </div>
 
-        <!-- FOOTER -->
+        <!-- ============================================
+             FOOTER
+        ============================================ -->
         <footer class="footer">
             MediVault Pharmacy Management System
             <span>Academic Project</span>
@@ -583,11 +805,15 @@
 
 </div>
 
-<!-- ADD / EDIT MEDICINE MODAL -->
+<!-- ============================================
+     ADD / EDIT MEDICINE MODAL
+============================================ -->
 <div id="medicineModal" class="modal" hidden>
+
     <div class="modal-card">
 
         <div class="section-heading">
+
             <div>
                 <h2 id="modalTitle">Add Medicine</h2>
                 <p>Enter the medicine details below.</p>
@@ -600,6 +826,7 @@
             >
                 ×
             </button>
+
         </div>
 
         <form id="medicineForm">
@@ -757,6 +984,7 @@
             ></p>
 
             <div class="modal-actions">
+
                 <button
                     type="button"
                     id="cancelModalBtn"
@@ -768,16 +996,150 @@
                 <button type="submit" class="primary-btn">
                     Save Medicine
                 </button>
+
             </div>
 
         </form>
+
     </div>
+
 </div>
 
-<!-- TOAST -->
+<!-- ============================================
+     ADD / EDIT SUPPLIER MODAL
+============================================ -->
+<div id="supplierModal" class="modal" hidden>
+
+    <div class="modal-card">
+
+        <div class="section-heading">
+
+            <div>
+                <h2 id="supplierModalTitle">Add Supplier</h2>
+                <p>Enter supplier details below.</p>
+            </div>
+
+            <button
+                type="button"
+                id="closeSupplierModalBtn"
+                class="close-btn"
+            >
+                ×
+            </button>
+
+        </div>
+
+        <form id="supplierForm">
+
+            <input type="hidden" id="supplierId">
+
+            <div class="form-grid">
+
+                <div class="form-field">
+                    <label for="supplierName">
+                        Supplier Name *
+                    </label>
+                    <input
+                        type="text"
+                        id="supplierName"
+                        required
+                    >
+                </div>
+
+                <div class="form-field">
+                    <label for="supplierContactPerson">
+                        Contact Person *
+                    </label>
+                    <input
+                        type="text"
+                        id="supplierContactPerson"
+                        required
+                    >
+                </div>
+
+                <div class="form-field">
+                    <label for="supplierPhone">
+                        Phone Number *
+                    </label>
+                    <input
+                        type="tel"
+                        id="supplierPhone"
+                        required
+                    >
+                </div>
+
+                <div class="form-field">
+                    <label for="supplierEmail">
+                        Email Address
+                    </label>
+                    <input
+                        type="email"
+                        id="supplierEmail"
+                    >
+                </div>
+
+                <div class="form-field">
+                    <label for="supplierAddress">
+                        Address
+                    </label>
+                    <input
+                        type="text"
+                        id="supplierAddress"
+                    >
+                </div>
+
+                <div class="form-field">
+                    <label for="supplierStatus">
+                        Status
+                    </label>
+                    <select id="supplierStatus">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+
+            </div>
+
+            <p
+                id="supplierFormMessage"
+                class="message"
+                role="status"
+            ></p>
+
+            <div class="modal-actions">
+
+                <button
+                    type="button"
+                    id="cancelSupplierModalBtn"
+                    class="secondary-btn"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    id="saveSupplierBtn"
+                    class="primary-btn"
+                >
+                    Save Supplier
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<!-- ============================================
+     TOAST
+============================================ -->
 <div id="toast" class="toast" role="status"></div>
 
-<!-- JAVASCRIPT -->
+<!-- ============================================
+     JAVASCRIPT
+============================================ -->
 <script src="script.js"></script>
 
 </body>
