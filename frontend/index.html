@@ -735,6 +735,13 @@
                     <p id="purchaseMessage" class="message" role="status"></p>
                     <button type="submit" id="savePurchaseBtn" class="primary-btn">Record Purchase &amp; Update Stock</button>
                 </form>
+                <div id="purchaseInvoiceResult" class="purchase-invoice" hidden aria-live="polite">
+                    <div class="purchase-invoice-toolbar">
+                        <h3>Purchase Receipt</h3>
+                        <button type="button" id="printPurchaseInvoiceBtn" class="primary-btn">Print Purchase Receipt</button>
+                    </div>
+                    <div id="purchaseInvoiceContent"></div>
+                </div>
                 <h3>Purchase History</h3>
                 <div class="table-container">
                     <table>
