@@ -12,7 +12,7 @@ const router = express.Router();
 router.post(
     "/",
     protect,
-    authorize("admin", "pharmacist", "cashier"),
+    authorize("admin", "cashier"),
     async (req, res) => {
         let session;
 
@@ -255,7 +255,7 @@ router.get(
     authorize("admin", "pharmacist", "cashier"),
     async (req, res) => {
         try {
-            const sales = await Sale.find()
+            const sales = await Sale.find(req.user.role === "admin" ? {} : { soldBy: req.user.id })
                 .sort({ createdAt: -1 })
                 .limit(100)
                 .populate("soldBy", "name email");
@@ -287,7 +287,7 @@ router.get(
                 });
             }
 
-            const sale = await Sale.findById(req.params.id)
+            const sale = await Sale.findOne(req.user.role === "admin" ? { _id: req.params.id } : { _id: req.params.id, soldBy: req.user.id })
                 .populate("soldBy", "name email");
 
             if (!sale) {
