@@ -1192,3 +1192,65 @@ tbody tr:hover { background: #f6fbfb; }
 @media print {
     .stat-card::before { display: none !important; }
 }
+
+
+/* Public-facing sign-in experience — isolate workspace until authenticated. */
+body:not(.is-authenticated) .sidebar,
+body:not(.is-authenticated) .topbar,
+body:not(.is-authenticated) .footer { display: none !important; }
+body:not(.is-authenticated) .main-content {
+    margin-left: 0; padding: 0; min-height: 100vh;
+    display: grid; grid-template-columns: minmax(0,1.04fr) minmax(440px,.96fr);
+    align-items: center; gap: 0;
+    background: #f8fbfc;
+}
+body:not(.is-authenticated) .welcome-hero {
+    display: flex; align-items: center; min-height: 100vh;
+    padding: clamp(42px,6vw,112px);
+    background: radial-gradient(circle at 85% 12%,rgba(54,207,176,.17),transparent 38%),
+                linear-gradient(145deg,#102f3d 0%,#123e4b 58%,#0a3039 100%);
+    color: white; overflow: hidden; position: relative;
+}
+.welcome-hero::after {
+    content:''; position:absolute; width: 390px; height:390px; border:1px solid rgba(108,238,205,.13);
+    border-radius:50%; bottom:-215px; right:-115px; box-shadow:0 0 0 65px rgba(108,238,205,.035),0 0 0 130px rgba(108,238,205,.025);
+    pointer-events:none;
+}
+.welcome-hero-inner { max-width: 540px; position:relative; z-index:1; }
+.welcome-kicker { color:#a0e7d9; font-size:11px; font-weight:800; letter-spacing:2px; display:flex; align-items:center; gap:10px; margin-bottom:45px; }
+.welcome-kicker-dot { width:8px;height:8px;border-radius:50%;background:#38d8b4;box-shadow:0 0 0 5px rgba(56,216,180,.12); }
+.welcome-mark { width:66px;height:66px;display:grid;place-items:center;background:linear-gradient(135deg,#32c9ae,#0b988b);border-radius:20px;font-size:38px;box-shadow:0 15px 36px rgba(0,0,0,.14);margin-bottom:33px; }
+.welcome-hero h2 { font-size:clamp(40px,4.6vw,72px);line-height:1.12;letter-spacing:-3px;color:white;font-weight:800; }
+.welcome-hero h2 span { color:#6be5c7; }
+.welcome-lead { font-size:clamp(15px,1.3vw,18px);color:#c2d7dc;line-height:1.8;margin:25px 0 39px;max-width:480px; }
+.welcome-feature-list { display:grid;gap:21px; }
+.welcome-feature-list>div { display:flex;align-items:center;gap:16px; }
+.welcome-feature-icon { display:grid;place-items:center;flex-shrink:0;width:45px;height:45px;background:rgba(100,229,202,.11);border:1px solid rgba(100,229,202,.18);border-radius:12px;color:#7cecd0;font-size:22px; }
+.welcome-feature-list strong { display:block;font-size:14px;color:#fff;margin-bottom:3px; }
+.welcome-feature-list small { display:block;color:#a7c3ca;font-size:12px;line-height:1.5; }
+.welcome-footnote { margin-top:62px;font-size:10px;letter-spacing:1.4px;color:#8dafb9; }
+.welcome-footnote span { color:#3dd7b6;padding:0 8px; }
+body:not(.is-authenticated) .login-panel { width:calc(100% - 56px);max-width:485px;margin:34px auto;align-self:center; }
+body:not(.is-authenticated) .login-panel h2 { font-size:28px; }
+body:not(.is-authenticated) .login-panel .section-heading { margin-bottom:28px; }
+body:not(.is-authenticated) .login-panel .login-form { gap:14px; }
+body:not(.is-authenticated) .login-panel .login-form input { min-height:49px; }
+body:not(.is-authenticated) .login-panel .primary-btn { min-height:49px; }
+body:not(.is-authenticated) .login-panel > .secondary-btn { margin-top:14px; }
+body.is-authenticated .welcome-hero { display:none !important; }
+body:not(.is-authenticated) #appSections { display:none !important; }
+@media(max-width: 1000px) {
+    body:not(.is-authenticated) .main-content { grid-template-columns: minmax(0,.9fr) minmax(400px,1.1fr); }
+    body:not(.is-authenticated) .welcome-hero { padding:40px; }
+    .welcome-hero h2 { letter-spacing:-2px; }
+}
+@media(max-width: 760px) {
+    body:not(.is-authenticated) .main-content { display:flex; flex-direction:column; }
+    body:not(.is-authenticated) .welcome-hero { min-height:0;width:100%;padding:36px 24px 28px; }
+    .welcome-kicker { margin-bottom:20px; }
+    .welcome-mark { width:46px;height:46px;border-radius:13px;font-size:28px;margin-bottom:16px; }
+    .welcome-hero h2 { font-size:36px;letter-spacing:-1.5px; }
+    .welcome-lead { font-size:13px;margin:13px 0 0;line-height:1.6; }
+    .welcome-feature-list,.welcome-footnote { display:none; }
+    body:not(.is-authenticated) .login-panel { margin:22px auto;width:calc(100% - 32px); }
+}
