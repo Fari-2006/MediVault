@@ -391,6 +391,12 @@ if (loginForm) {
                 currentUser.role || "user";
 
             loginSection.hidden = true;
+            if (data.user.mustChangePassword) {
+                $("passwordChangeSection").hidden = false;
+                if (appSections) appSections.hidden = true;
+                return;
+            }
+            applyRoleNavigation();
 
             if (appSections) {
                 appSections.hidden = false;
@@ -2971,3 +2977,68 @@ showPage = function(page) {
     if (page === "dashboard" && authToken) loadDashboardCharts();
 };
 if (dashboardCharts) dashboardCharts.hidden = true;
+
+
+// CASHIER SIGNUP & FIRST-LOGIN PASSWORD CHANGE
+function applyRoleNavigation() {
+    const cashier = currentUser?.role === "cashier";
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.hidden = cashier && ["purchases","suppliers","reports"].includes(link.dataset.page);
+    });
+    const charts = $("dashboardCharts");
+    if (charts && cashier) charts.hidden = true;
+    for (const id of ["todayRevenue"]) {
+        const element = $(id);
+        if (element) element.closest(".stat-card").hidden = cashier;
+    }
+}
+$("showRegisterBtn")?.addEventListener("click", () => {
+    loginSection.hidden = true;
+    $("registerSection").hidden = false;
+});
+$("backToLoginBtn")?.addEventListener("click", () => {
+    $("registerSection").hidden = true;
+    loginSection.hidden = false;
+});
+$("registerForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+        const data = await apiRequest("/auth/register", {
+            method: "POST",
+            body: JSON.stringify({
+                name: $("registerName").value,
+                email: $("registerEmail").value,
+                phone: $("registerPhone").value,
+                address: $("registerAddress").value,
+                password: $("registerPassword").value,
+                confirmPassword: $("registerConfirm").value
+            })
+        });
+        setMessage($("registerMessage"), data.message, "success");
+        $("registerForm").reset();
+    } catch (error) {
+        setMessage($("registerMessage"), error.message, "error");
+    } finally { button.disabled = false; }
+});
+$("passwordChangeForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const button = event.currentTarget.querySelector('button[type="submit"]');
+    button.disabled = true;
+    try {
+        const data = await apiRequest("/auth/change-password", {
+            method: "POST",
+            body: JSON.stringify({
+                currentPassword: $("currentPassword").value,
+                newPassword: $("newPassword").value
+            })
+        });
+        setMessage($("passwordChangeMessage"), data.message, "success");
+        $("passwordChangeForm").reset();
+        $("passwordChangeSection").hidden = true;
+        logout(false);
+    } catch (error) {
+        setMessage($("passwordChangeMessage"), error.message, "error");
+    } finally { button.disabled = false; }
+});
