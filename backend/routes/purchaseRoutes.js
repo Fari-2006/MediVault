@@ -37,7 +37,7 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const { supplierId, medicineId, quantity, unitCost, requestId } = req.body || {};
+  const { supplierId, medicineId, quantity, unitCost, requestId, newBatch } = req.body || {};
   if (!mongoose.isValidObjectId(supplierId) || !mongoose.isValidObjectId(medicineId))
     return res.status(400).json({ message: "Choose a valid supplier and medicine." });
   if (!Number.isSafeInteger(quantity) || quantity < 1)
@@ -49,6 +49,18 @@ router.post("/", async (req, res) => {
   if (typeof requestId !== "string" || !/^[a-zA-Z0-9_-]{8,100}$/.test(requestId))
     return res.status(400).json({ message: "A unique requestId (8–100 letters, digits, _ or -) is required." });
 
+  if (newBatch !== undefined) {
+    if (!newBatch || typeof newBatch !== "object" || Array.isArray(newBatch))
+      return res.status(400).json({ message: "Invalid new batch." });
+    const { batchNumber, expiryDate } = newBatch;
+    if (typeof batchNumber !== "string" || !batchNumber.trim() || batchNumber.trim().length > 100)
+      return res.status(400).json({ message: "Enter a new batch number." });
+    if (typeof expiryDate !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(expiryDate) ||
+        Number.isNaN(Date.parse(expiryDate)) || new Date(expiryDate).toISOString().slice(0, 10) !== expiryDate)
+      return res.status(400).json({ message: "Enter a valid expiry date." });
+    if (expiryDate < new Date().toISOString().slice(0, 10))
+      return res.status(400).json({ message: "Cannot receive an expired batch." });
+  }
   let session;
   try {
     session = await mongoose.startSession();
@@ -66,17 +78,41 @@ router.post("/", async (req, res) => {
       const medicine = await Medicine.findById(medicineId).session(session);
       if (!medicine) throw new Error("MEDICINE_NOT_FOUND");
       if (medicine.status !== "active") throw new Error("MEDICINE_INACTIVE");
-      // This version receives stock into an existing medicine batch only.
+      let targetMedicine = medicine;
+      if (newBatch) {
+        const batchNumber = newBatch.batchNumber.trim();
+        const duplicate = await Medicine.findOne({
+          medicineName: medicine.medicineName, batchNumber
+        }).session(session);
+        if (duplicate) throw new Error("BATCH_EXISTS");
+        const [created] = await Medicine.create([{
+          medicineName: medicine.medicineName,
+          genericName: medicine.genericName,
+          category: medicine.category,
+          batchNumber,
+          manufacturer: medicine.manufacturer,
+          barcode: "",
+          purchasePrice: unitCost,
+          sellingPrice: medicine.sellingPrice,
+          gstPercentage: medicine.gstPercentage,
+          quantity: 0,
+          reorderLevel: medicine.reorderLevel,
+          expiryDate: newBatch.expiryDate,
+          prescriptionRequired: medicine.prescriptionRequired,
+          status: "active"
+        }], { session });
+        targetMedicine = created;
+      }
       const totalCost = Math.round(quantity * Math.round(unitCost * 100)) / 100;
       if (!Number.isSafeInteger(Math.round(totalCost * 100))) throw new Error("AMOUNT_TOO_LARGE");
       const [purchase] = await Purchase.create([{
-        purchaseNumber: requestId, supplier: supplier._id, medicine: medicine._id,
-        medicineName: medicine.medicineName, batchNumber: medicine.batchNumber,
-        expiryDate: medicine.expiryDate, quantity, unitCost, totalCost,
+        purchaseNumber: requestId, supplier: supplier._id, medicine: targetMedicine._id,
+        medicineName: targetMedicine.medicineName, batchNumber: targetMedicine.batchNumber,
+        expiryDate: targetMedicine.expiryDate, quantity, unitCost, totalCost,
         purchasedBy: req.user.id
       }], { session });
       const result = await Medicine.updateOne(
-        { _id: medicine._id, status: "active" },
+        { _id: targetMedicine._id, status: "active" },
         { $inc: { quantity }, $set: { purchasePrice: unitCost } },
         { session, runValidators: true }
       );
@@ -91,6 +127,7 @@ router.post("/", async (req, res) => {
       SUPPLIER_INVALID: [400, "Supplier not found or inactive."],
       MEDICINE_NOT_FOUND: [404, "Medicine not found."],
       MEDICINE_INACTIVE: [400, "Inactive medicines cannot receive stock."],
+      BATCH_EXISTS: [409, "Batch already exists. Receive stock into that batch instead."],
       AMOUNT_TOO_LARGE: [400, "Purchase amount is too large."],
       STOCK_UPDATE_FAILED: [409, "Medicine changed while recording purchase. Please retry."]
     };
