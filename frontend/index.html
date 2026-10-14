@@ -53,6 +53,8 @@
                 ▣ Purchase Management
             </a>
 
+            <a href="#reports" class="nav-link" data-page="reports">▥ Reports</a>
+
             <a href="#suppliers" class="nav-link" data-page="suppliers">
                 ◈ Supplier Management
             </a>
@@ -709,6 +711,39 @@
             <!-- ============================================
                  SUPPLIER MANAGEMENT
             ============================================ -->
+
+            <!-- SALES & PURCHASE REPORTS -->
+            <section id="reportsSection" class="panel" hidden>
+                <div class="section-heading">
+                    <div><h2>Sales & Purchase Reports</h2>
+                        <p>Track revenue, purchase spending and estimated gross profit.</p></div>
+                    <button type="button" id="reportRefreshBtn" class="secondary-btn">Refresh</button>
+                </div>
+                <div class="toolbar">
+                    <div class="form-field"><label for="reportFrom">From date</label><input id="reportFrom" type="date"></div>
+                    <div class="form-field"><label for="reportTo">To date</label><input id="reportTo" type="date"></div>
+                    <button type="button" id="reportApplyBtn" class="primary-btn">Apply Filter</button>
+                    <button type="button" id="reportClearBtn" class="secondary-btn">All Time</button>
+                    <button type="button" id="reportExportBtn" class="secondary-btn">Export CSV</button>
+                </div>
+                <p id="reportMessage" class="message" role="status"></p>
+                <div class="stats-grid">
+                    <article class="stat-card"><div class="stat-top"><span>Sales Revenue (incl. GST)</span></div><h2 id="reportRevenue">—</h2></article>
+                    <article class="stat-card"><div class="stat-top"><span>Purchase Expenses</span></div><h2 id="reportExpenses">—</h2></article>
+                    <article class="stat-card"><div class="stat-top"><span>Estimated Gross Profit</span></div><h2 id="reportProfit">—</h2></article>
+                    <article class="stat-card"><div class="stat-top"><span>Completed Sales</span></div><h2 id="reportSalesCount">—</h2></article>
+                    <article class="stat-card"><div class="stat-top"><span>Received Purchases</span></div><h2 id="reportPurchasesCount">—</h2></article>
+                </div>
+                <p class="message">Estimated gross profit = sales subtotal (excluding GST) minus estimated cost of goods sold, based on current medicine purchase prices. It is not net profit and may differ from historical actual cost.</p>
+                <h3>Daily Sales & Purchases</h3>
+                <div class="table-wrapper"><table><thead><tr><th>Date (UTC)</th><th>Sales</th><th>Purchases</th></tr></thead><tbody id="reportDailyBody"></tbody></table></div>
+                <h3>Top-Selling Medicines</h3>
+                <div class="table-wrapper"><table><thead><tr><th>Medicine</th><th>Units Sold</th><th>Sales Total</th></tr></thead><tbody id="reportTopBody"></tbody></table></div>
+                <h3>Recent Sales (up to 100)</h3>
+                <div class="table-wrapper"><table><thead><tr><th>Invoice</th><th>Date</th><th>Payment</th><th>Units</th><th>Total</th></tr></thead><tbody id="reportSalesBody"></tbody></table></div>
+                <h3>Recent Purchases (up to 100)</h3>
+                <div class="table-wrapper"><table><thead><tr><th>Purchase</th><th>Date</th><th>Medicine</th><th>Batch</th><th>Qty</th><th>Total</th></tr></thead><tbody id="reportPurchasesBody"></tbody></table></div>
+            </section>
 
             <!-- PURCHASE MANAGEMENT -->
             <section id="purchasesSection" class="panel" hidden>
