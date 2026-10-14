@@ -2884,3 +2884,90 @@ showPage = function(page) {
     previousReportsShowPage(page);
 };
 if (reportsSection) reportsSection.hidden = true;
+
+
+// ============================================
+// DASHBOARD CHARTS (NO EXTERNAL LIBRARIES)
+// ============================================
+const dashboardCharts = $("dashboardCharts");
+function drawDashboardBars(id, rows, money = false) {
+    const root = $(id);
+    if (!root) return;
+    root.replaceChildren();
+    if (!rows.length || rows.every(r => Number(r.value) === 0)) {
+        const p = document.createElement("p");
+        p.className = "chart-empty";
+        p.textContent = "No data yet.";
+        root.appendChild(p);
+        return;
+    }
+    const max = Math.max(1, ...rows.map(r => Number(r.value) || 0));
+    for (const entry of rows) {
+        const row = document.createElement("div");
+        row.className = "chart-row";
+        const label = document.createElement("span");
+        label.className = "chart-label";
+        label.textContent = entry.label;
+        label.title = entry.label;
+        const track = document.createElement("div");
+        track.className = "chart-track";
+        const bar = document.createElement("div");
+        bar.className = "chart-fill" + (entry.purchase ? " purchase" : "");
+        bar.style.width = (Math.max(0, Number(entry.value) || 0) / max * 100) + "%";
+        track.appendChild(bar);
+        const value = document.createElement("span");
+        value.className = "chart-value";
+        value.textContent = money ? formatCurrency(entry.value) : String(entry.value);
+        row.append(label, track, value);
+        root.appendChild(row);
+    }
+}
+async function loadDashboardCharts() {
+    if (!dashboardCharts || !authToken) return;
+    if (currentUser?.role !== "admin") {
+        setMessage($("dashboardChartsMessage"), "Analytics are available to admins only.");
+        return;
+    }
+    setMessage($("dashboardChartsMessage"), "Loading charts...");
+    try {
+        // Use UTC days, matching the reporting API date grouping.
+        const now = new Date();
+        const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        const dates = Array.from({length: 7}, (_, i) =>
+            new Date(todayUTC - (6 - i) * 86400000).toISOString().slice(0, 10));
+        const data = await apiRequest("/reports?from=" + dates[0] + "&to=" + dates[6]);
+        const byDate = new Map(data.daily.map(d => [d.date, d]));
+        drawDashboardBars("chartRevenue", dates.map(d => ({
+            label: d.slice(5), value: byDate.get(d)?.sales || 0
+        })), true);
+        drawDashboardBars("chartSalesPurchases", [
+            {label: "Sales", value: data.daily.reduce((s, d) => s + d.sales, 0)},
+            {label: "Purchases", value: data.daily.reduce((s, d) => s + d.purchases, 0), purchase: true}
+        ], true);
+        drawDashboardBars("chartTopMedicines", data.topMedicines.slice(0, 5).map(m => ({
+            label: m.medicineName, value: m.quantity
+        })));
+        // Inventory data comes from the full unfiltered medicines API.
+        const inv = await apiRequest("/medicines");
+        const stock = Array.isArray(inv) ? inv : (inv.medicines || []);
+        const totals = new Map();
+        for (const m of stock) {
+            const name = m.category || "Uncategorized";
+            totals.set(name, (totals.get(name) || 0) + Number(m.quantity || 0));
+        }
+        drawDashboardBars("chartStock", [...totals].map(([label, value]) => ({
+            label, value
+        })).sort((a,b) => b.value-a.value).slice(0,8));
+        setMessage($("dashboardChartsMessage"), "Charts updated.");
+    } catch (error) {
+        setMessage($("dashboardChartsMessage"), "Unable to load charts: " + error.message, "error");
+    }
+}
+$("refreshChartsBtn")?.addEventListener("click", loadDashboardCharts);
+const previousChartsShowPage = showPage;
+showPage = function(page) {
+    previousChartsShowPage(page);
+    if (dashboardCharts) dashboardCharts.hidden = page !== "dashboard";
+    if (page === "dashboard" && authToken) loadDashboardCharts();
+};
+if (dashboardCharts) dashboardCharts.hidden = true;
