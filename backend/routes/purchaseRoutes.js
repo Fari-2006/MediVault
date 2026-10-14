@@ -55,7 +55,7 @@ router.post("/", async (req, res) => {
     const { batchNumber, expiryDate } = newBatch;
     if (typeof batchNumber !== "string" || !batchNumber.trim() || batchNumber.trim().length > 100)
       return res.status(400).json({ message: "Enter a new batch number." });
-    if (typeof expiryDate !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(expiryDate) ||
+    if (typeof expiryDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate) ||
         Number.isNaN(Date.parse(expiryDate)) || new Date(expiryDate).toISOString().slice(0, 10) !== expiryDate)
       return res.status(400).json({ message: "Enter a valid expiry date." });
     if (expiryDate < new Date().toISOString().slice(0, 10))
