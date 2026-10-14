@@ -55,6 +55,8 @@
 
             <a href="#reports" class="nav-link" data-page="reports">▥ Reports</a>
 
+            <a href="#staff" class="nav-link" data-page="staff">♙ Staff Management</a>
+
             <a href="#suppliers" class="nav-link" data-page="suppliers">
                 ◈ Supplier Management
             </a>
@@ -753,6 +755,17 @@
             <!-- ============================================
                  SUPPLIER MANAGEMENT
             ============================================ -->
+
+            <section id="staffSection" class="panel" hidden>
+                <div class="section-heading"><div><h2>Staff Management</h2><p>Review and manage cashier applications.</p></div>
+                    <button type="button" id="staffRefreshBtn" class="secondary-btn">Refresh Staff</button></div>
+                <label for="staffStatusFilter">Application status</label>
+                <select id="staffStatusFilter"><option value="">All Staff</option><option value="pending">Pending Applications</option>
+                    <option value="approved">Approved Staff</option><option value="rejected">Rejected Applications</option></select>
+                <p id="staffMessage" class="message" role="status"></p>
+                <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="staffTableBody"></tbody></table></div>
+            </section>
 
             <!-- SALES & PURCHASE REPORTS -->
             <section id="reportsSection" class="panel" hidden>
