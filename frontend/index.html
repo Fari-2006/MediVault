@@ -725,6 +725,14 @@
                             <select id="purchaseSupplier" required><option value="">Select supplier</option></select></div>
                         <div><label for="purchaseMedicine">Existing medicine batch</label>
                             <select id="purchaseMedicine" required><option value="">Select medicine</option></select></div>
+                        <div><label for="purchaseBatchMode">Receive into</label>
+                            <select id="purchaseBatchMode"><option value="existing">Existing batch</option><option value="new">New batch</option></select></div>
+                        <div id="purchaseNewBatchFields" class="purchase-new-batch" hidden>
+                            <label for="purchaseNewBatchNumber">New batch number</label>
+                            <input id="purchaseNewBatchNumber" type="text" maxlength="100">
+                            <label for="purchaseNewBatchExpiry">New batch expiry date</label>
+                            <input id="purchaseNewBatchExpiry" type="date">
+                        </div>
                         <div><label for="purchaseQuantity">Quantity received</label>
                             <input id="purchaseQuantity" type="number" min="1" step="1" required></div>
                         <div><label for="purchaseUnitCost">Unit purchase price (₹)</label>
