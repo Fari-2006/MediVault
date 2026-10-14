@@ -69,91 +69,56 @@ router.post(
             session = await mongoose.startSession();
 
             await session.withTransaction(async () => {
-                const medicineIds = [...quantities.keys()].sort();
-
-                const medicines = await Medicine.find({
-                    _id: { $in: medicineIds }
-                })
-                    .sort({ _id: 1 })
-                    .session(session);
-
-                // Check that all requested medicines exist.
-                if (medicines.length !== medicineIds.length) {
-                    throw new Error("MEDICINE_NOT_FOUND");
-                }
-
+                const requestedIds = [...quantities.keys()].sort();
+                const requested = await Medicine.find({ _id: { $in: requestedIds } }).session(session);
+                if (requested.length !== requestedIds.length) throw new Error("MEDICINE_NOT_FOUND");
                 const saleItems = [];
                 let subtotal = 0;
                 let totalGST = 0;
-
-                // Use the server's current date, not the browser's date.
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
+                const allocated = new Map();
 
-                for (const medicine of medicines) {
-                    // Reject inactive medicines.
-                    if (medicine.status !== "active") {
-                        throw new Error(
-                            `MEDICINE_INACTIVE:${medicine.medicineName}`
-                        );
+                // Group requested batch IDs by medicine name. Checkout always allocates
+                // available batches in earliest-expiry order, not selected-batch order.
+                const groups = new Map();
+                for (const selected of requested) {
+                    const key = selected.medicineName.trim().toLowerCase();
+                    groups.set(key, (groups.get(key) || 0) + quantities.get(String(selected._id)));
+                }
+                for (const [nameKey, requestedQty] of groups) {
+                    const example = requested.find(m => m.medicineName.trim().toLowerCase() === nameKey);
+                    const candidates = await Medicine.find({
+                        medicineName: example.medicineName,
+                        status: "active",
+                        quantity: { $gt: 0 },
+                        expiryDate: { $gte: today }
+                    }).sort({ expiryDate: 1, _id: 1 }).session(session);
+                    const available = candidates.reduce((sum, m) => sum + m.quantity, 0);
+                    if (available < requestedQty)
+                        throw new Error("INSUFFICIENT_STOCK:" + example.medicineName + ": available " + available);
+                    let remaining = requestedQty;
+                    for (const medicine of candidates) {
+                        if (remaining <= 0) break;
+                        const quantity = Math.min(remaining, medicine.quantity);
+                        remaining -= quantity;
+                        allocated.set(String(medicine._id), quantity);
+                        const unitPrice = medicine.sellingPrice;
+                        const gstPercentage = medicine.gstPercentage || 0;
+                        const itemSubtotal = Number((unitPrice * quantity).toFixed(2));
+                        const gstAmount = Number((itemSubtotal * gstPercentage / 100).toFixed(2));
+                        saleItems.push({
+                            medicine: medicine._id,
+                            medicineName: medicine.medicineName,
+                            batchNumber: medicine.batchNumber,
+                            expiryDate: medicine.expiryDate,
+                            quantity, unitPrice, gstPercentage,
+                            subtotal: itemSubtotal, gstAmount,
+                            total: Number((itemSubtotal + gstAmount).toFixed(2))
+                        });
+                        subtotal += itemSubtotal;
+                        totalGST += gstAmount;
                     }
-
-                    // Reject expired medicines.
-                    // A medicine expiring today remains valid for that
-                    // calendar day; it is rejected from the next day.
-                    if (medicine.expiryDate) {
-                        const expiryDate = new Date(medicine.expiryDate);
-                        expiryDate.setHours(0, 0, 0, 0);
-
-                        if (expiryDate < today) {
-                            throw new Error(
-                                `MEDICINE_EXPIRED:${medicine.medicineName}`
-                            );
-                        }
-                    }
-
-                    const quantity = quantities.get(
-                        medicine._id.toString()
-                    );
-
-                    // Check available stock.
-                    if (medicine.quantity < quantity) {
-                        throw new Error(
-                            `INSUFFICIENT_STOCK:${medicine.medicineName}: available ${medicine.quantity}`
-                        );
-                    }
-
-                    const unitPrice = medicine.sellingPrice;
-                    const gstPercentage = medicine.gstPercentage || 0;
-
-                    const itemSubtotal = Number(
-                        (unitPrice * quantity).toFixed(2)
-                    );
-
-                    const gstAmount = Number(
-                        (
-                            (itemSubtotal * gstPercentage) /
-                            100
-                        ).toFixed(2)
-                    );
-
-                    const itemTotal = Number(
-                        (itemSubtotal + gstAmount).toFixed(2)
-                    );
-
-                    saleItems.push({
-                        medicine: medicine._id,
-                        medicineName: medicine.medicineName,
-                        quantity,
-                        unitPrice,
-                        gstPercentage,
-                        subtotal: itemSubtotal,
-                        gstAmount,
-                        total: itemTotal
-                    });
-
-                    subtotal += itemSubtotal;
-                    totalGST += gstAmount;
                 }
 
                 subtotal = Number(subtotal.toFixed(2));
