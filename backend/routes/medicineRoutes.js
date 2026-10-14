@@ -11,11 +11,7 @@ const {
 const router = express.Router();
 
 // Roles allowed to manage medicines
-const medicineManagers = authorize(
-    "admin",
-    "pharmacist",
-    "storekeeper"
-);
+const medicineManagers = authorize("admin");
 
 // ============================================
 // 1. ADD A NEW MEDICINE
@@ -198,6 +194,7 @@ router.get(
             }
 
             const medicines = await Medicine.find(filter)
+                .select(req.user.role === "admin" ? "" : "-purchasePrice")
                 .sort({ medicineName: 1 });
 
             return res.status(200).json({
