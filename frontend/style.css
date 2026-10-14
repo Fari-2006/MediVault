@@ -1053,3 +1053,142 @@ tbody tr:hover {
 .chart-empty{color:var(--muted);font-size:12px;padding:16px 0}
 @media(max-width:1000px){.charts-grid{grid-template-columns:1fr}}
 @media(max-width:480px){.chart-row{grid-template-columns:75px minmax(0,1fr) auto;gap:6px;font-size:11px}}
+
+
+/* ============================================================
+   MEDIVAULT 2026 — PROFESSIONAL DESIGN SYSTEM
+   Progressive visual upgrade; preserves existing DOM contracts.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root {
+    --primary: #0c827b;
+    --primary-dark: #096760;
+    --background: #f3f7f8;
+    --surface: #ffffff;
+    --text: #17313d;
+    --muted: #71828e;
+    --border: #e2ebed;
+    --green: #13866b;
+    --red: #d34c56;
+    --orange: #dc8c3b;
+    --sidebar-width: 264px;
+}
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', 'Segoe UI', sans-serif; letter-spacing: -.012em; }
+h1,h2,h3,h4,.brand { font-family: 'Manrope', 'Segoe UI', sans-serif; }
+.sidebar {
+    background: linear-gradient(180deg,#102c3a 0%,#133849 55%,#0c2937 100%);
+    border-right: 1px solid #234a59;
+    box-shadow: 9px 0 30px rgba(15,43,54,.045);
+    padding: 29px 16px 22px;
+}
+.brand { margin-bottom: 43px; padding: 0 10px; }
+.brand-icon {
+    background: linear-gradient(135deg,#25c7ac,#0b857f);
+    box-shadow: 0 8px 22px rgba(11,191,164,.22);
+    border-radius: 14px;
+    width: 46px; height: 46px;
+}
+.brand h2 { color: #fff; font-size: 21px; letter-spacing: -.9px; }
+.brand p { color: #9db8c4; font-size: 10px; letter-spacing: .03em; }
+.menu-label { color: #7798a5; letter-spacing: 1.6px; }
+.navigation { gap: 5px; }
+.nav-link {
+    color: #bed0d8;
+    border: 1px solid transparent;
+    padding: 12px 14px;
+    border-radius: 11px;
+    font-weight: 600;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.nav-link:hover { background: #204656; color: white; transform: translateX(2px); }
+.nav-link.active {
+    background: linear-gradient(90deg,rgba(39,199,171,.2),rgba(39,199,171,.065));
+    border-color: rgba(83,219,192,.16);
+    color: #7ff0d3;
+    box-shadow: inset 3px 0 0 #31d1b3;
+}
+.sidebar-bottom { border-color: #2c5260; }
+.user-avatar { background: #235868; color: #8df5d9; }
+.user-details strong { color: white; }
+.user-details span { color: #9bb7c3; }
+.logout-btn { color: #b9d2d9; }
+.logout-btn:hover { color: #fff; }
+.main-content { padding: 34px clamp(20px,3vw,52px); }
+.topbar { padding-bottom: 20px; border-bottom: 1px solid var(--border); margin-bottom: 27px; }
+.eyebrow { color: #0c827b; font-size: 10px; font-weight: 800; }
+.topbar h1 { color: #183746; font-size: clamp(25px,2.5vw,34px); letter-spacing: -1.3px; }
+.subtitle { font-size: 13px; }
+.status-indicator { box-shadow: 0 0 0 4px #e0f7ef; }
+.system-status { color: #476470; }
+.panel,.stat-card {
+    border: 1px solid #e3ecef;
+    box-shadow: 0 7px 28px rgba(22,65,78,.045);
+    border-radius: 17px;
+}
+.panel { padding: clamp(17px,2vw,27px); }
+.stat-card { position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(22,65,78,.09); }
+.stat-card::before {
+    content: ''; position: absolute; top: 0; left: 20px; right: 20px;
+    height: 3px; background: linear-gradient(90deg,#11aa9d,#b4eee1);
+    border-radius: 0 0 6px 6px;
+}
+.stat-card h2 { font-family: 'Manrope',sans-serif; letter-spacing: -1.1px; }
+.section-heading h2 { font-size: 19px; color: #1c3b48; }
+.primary-btn {
+    background: linear-gradient(135deg,#0b9b8e,#087c79);
+    border-color: #087e79;
+    box-shadow: 0 4px 12px rgba(8,124,121,.14);
+}
+.primary-btn:hover { background: linear-gradient(135deg,#09877d,#07645f); }
+.secondary-btn { border-color: #d9e7e9; color: #28515e; }
+.secondary-btn:hover { background: #f0f8f8; }
+button { transition: filter .15s ease, transform .15s ease, box-shadow .15s ease; }
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible {
+    outline: 3px solid rgba(15,166,149,.3); outline-offset: 2px;
+}
+.login-panel {
+    max-width: 495px;
+    margin: clamp(20px,5vh,64px) auto 32px;
+    padding: clamp(24px,3.2vw,42px);
+    border-radius: 22px;
+    box-shadow: 0 22px 65px rgba(23,61,75,.09);
+}
+.login-panel h2 { font-size: 24px; letter-spacing: -.8px; }
+.login-panel > p,.login-panel .section-heading p { color: var(--muted); line-height: 1.6; }
+.login-form { gap: 12px; margin-top: 18px; }
+.login-form label { font-size: 12px; color: #3c5964; }
+.login-form input,.form-field input,.form-field select,.toolbar input,.toolbar select {
+    border-color: #dbe7e9; border-radius: 10px; min-height: 43px;
+    transition: border-color .2s,box-shadow .2s;
+}
+.login-form input:focus,.form-field input:focus,.form-field select:focus,.toolbar input:focus,.toolbar select:focus {
+    border-color: #18a99c; box-shadow: 0 0 0 4px rgba(24,169,156,.10);
+}
+.login-form .primary-btn { padding: 13px; }
+.table-wrapper { border-radius: 12px; border: 1px solid #e9eff1; }
+table { border-collapse: collapse; }
+thead { background: #f6fafb; }
+th { color: #627d87; font-size: 11px; letter-spacing: .055em; }
+tbody tr { transition: background .15s; }
+tbody tr:hover { background: #f6fbfb; }
+.message.error { color: #bb394b; }
+.message.success { color: #087f64; }
+.empty-state { color: #80939b; }
+@media(max-width: 900px) {
+    .sidebar { box-shadow: none; }
+    .main-content { padding: 22px 16px; }
+}
+@media(max-width: 640px) {
+    .topbar { gap: 15px; }
+    .topbar-actions { width: 100%; justify-content: flex-start; }
+    .login-panel { margin: 16px auto; }
+    .stat-card { min-width: 0; }
+}
+@media(prefers-reduced-motion:reduce) {
+    *,*::before,*::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+@media print {
+    .stat-card::before { display: none !important; }
+}
