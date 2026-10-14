@@ -2476,6 +2476,20 @@ const purchaseMedicine = $("purchaseMedicine");
 const purchaseQuantity = $("purchaseQuantity");
 const purchaseUnitCost = $("purchaseUnitCost");
 const purchaseMessage = $("purchaseMessage");
+const purchaseBatchMode = $("purchaseBatchMode");
+const purchaseNewBatchFields = $("purchaseNewBatchFields");
+const purchaseNewBatchNumber = $("purchaseNewBatchNumber");
+const purchaseNewBatchExpiry = $("purchaseNewBatchExpiry");
+purchaseBatchMode?.addEventListener("change", () => {
+    const isNew = purchaseBatchMode.value === "new";
+    purchaseNewBatchFields.hidden = !isNew;
+    purchaseNewBatchNumber.required = isNew;
+    purchaseNewBatchExpiry.required = isNew;
+    purchaseRequestId = null;
+});
+[purchaseNewBatchNumber, purchaseNewBatchExpiry].forEach(input =>
+    input?.addEventListener("input", () => { purchaseRequestId = null; })
+);
 const purchaseTableBody = $("purchaseTableBody");
 
 function makePurchaseRequestId() {
@@ -2649,6 +2663,15 @@ purchaseForm?.addEventListener("submit", async event => {
         setMessage(purchaseMessage, "Enter a valid whole-number quantity and price with up to two decimal places.", "error");
         return;
     }
+    const isNewBatch = purchaseBatchMode?.value === "new";
+    const newBatch = isNewBatch ? {
+        batchNumber: purchaseNewBatchNumber.value.trim(),
+        expiryDate: purchaseNewBatchExpiry.value
+    } : undefined;
+    if (isNewBatch && (!newBatch.batchNumber || !newBatch.expiryDate)) {
+        setMessage(purchaseMessage, "Enter the new batch number and expiry date.", "error");
+        return;
+    }
     const button = $("savePurchaseBtn");
     button.disabled = true;
     if (!purchaseRequestId) purchaseRequestId = makePurchaseRequestId();
@@ -2661,11 +2684,15 @@ purchaseForm?.addEventListener("submit", async event => {
                 medicineId: purchaseMedicine.value,
                 quantity,
                 unitCost,
-                requestId: purchaseRequestId
+                requestId: purchaseRequestId,
+                ...(newBatch ? { newBatch } : {})
             })
         });
         purchaseRequestId = null;
         purchaseForm.reset();
+        purchaseNewBatchFields.hidden = true;
+        purchaseNewBatchNumber.required = false;
+        purchaseNewBatchExpiry.required = false;
         setMessage(purchaseMessage, "Purchase recorded. Medicine stock increased.", "success");
         showToast("Purchase recorded successfully.");
         await loadPurchasePage();
