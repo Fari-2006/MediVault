@@ -1251,19 +1251,20 @@ async function loadSaleMedicines() {
 
         saleMedicineSelect.appendChild(placeholder);
 
+        // One choice per medicine; checkout allocates its batches by FEFO.
+        const groups = new Map();
         for (const medicine of allSaleMedicines) {
-            const option = document.createElement(
-                "option"
-            );
-
-            option.value = medicine._id;
-
-            option.textContent =
-                `${medicine.medicineName} · ` +
-                `Batch ${medicine.batchNumber} · ` +
-                `${formatCurrency(medicine.sellingPrice)} · ` +
-                `Stock ${medicine.quantity}`;
-
+            const key = medicine.medicineName.trim().toLowerCase();
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(medicine);
+        }
+        for (const group of groups.values()) {
+            group.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+            const first = group[0];
+            const option = document.createElement("option");
+            option.value = first._id;
+            option.textContent = first.medicineName + " · FEFO · Total stock " +
+                group.reduce((sum, m) => sum + Number(m.quantity), 0);
             saleMedicineSelect.appendChild(option);
         }
 
@@ -1297,14 +1298,15 @@ function updateSaleStockInfo() {
         return;
     }
 
+    const groupStock = allSaleMedicines.filter(m => m.medicineName.trim().toLowerCase() === medicine.medicineName.trim().toLowerCase()).reduce((sum, m) => sum + Number(m.quantity), 0);
     saleStockInfo.textContent =
-        `Available stock: ${medicine.quantity} · ` +
+        `Available across batches: ${groupStock} · FEFO · ` +
         `Price: ${formatCurrency(medicine.sellingPrice)} · ` +
         `GST: ${Number(medicine.gstPercentage || 0)}%`;
 
     if (saleQuantityInput) {
         saleQuantityInput.max =
-            String(medicine.quantity);
+            String(groupStock);
 
         saleQuantityInput.value = "1";
     }
@@ -1370,13 +1372,13 @@ addSaleItemBtn?.addEventListener("click", () => {
         ? existing.quantity
         : 0;
 
+    const combinedStock = allSaleMedicines.filter(m => m.medicineName.trim().toLowerCase() === medicine.medicineName.trim().toLowerCase()).reduce((sum, m) => sum + Number(m.quantity), 0);
     if (
-        alreadyInCart + quantity >
-        Number(medicine.quantity)
+        alreadyInCart + quantity > combinedStock
     ) {
         setMessage(
             saleMessage,
-            `Only ${medicine.quantity} unit(s) are currently available.`,
+            `Only ${combinedStock} unit(s) are currently available across batches.`,
             "error"
         );
         return;
@@ -1388,14 +1390,14 @@ addSaleItemBtn?.addEventListener("click", () => {
         saleCart.push({
             medicineId: medicine._id,
             medicineName: medicine.medicineName,
-            batchNumber: medicine.batchNumber,
+            batchNumber: "FEFO (automatic)",
             sellingPrice:
                 Number(medicine.sellingPrice),
             gstPercentage:
                 Number(medicine.gstPercentage || 0),
             quantity,
             availableStock:
-                Number(medicine.quantity)
+                combinedStock
         });
     }
 
@@ -1467,7 +1469,7 @@ function renderSaleCart() {
         const row = document.createElement("tr");
 
         const cells = [
-            escapeHTML(item.medicineName),
+            escapeHTML(item.medicineName) + " (FEFO)",
 
             formatCurrency(item.sellingPrice),
 
@@ -1619,7 +1621,7 @@ completeSaleBtn?.addEventListener(
                 !medicine ||
                 medicine.status !== "active" ||
                 isExpired(medicine) ||
-                Number(medicine.quantity) <
+                allSaleMedicines.filter(m => m.medicineName.trim().toLowerCase() === item.medicineName.trim().toLowerCase()).reduce((sum, m) => sum + Number(m.quantity), 0) <
                     item.quantity
             ) {
                 setMessage(
@@ -1695,6 +1697,39 @@ completeSaleBtn?.addEventListener(
 
             if (saleInvoiceResult) {
                 saleInvoiceResult.hidden = false;
+                let detail = $("saleBatchBreakdown");
+                if (!detail) {
+                    detail = document.createElement("div");
+                    detail.id = "saleBatchBreakdown";
+                    saleInvoiceResult.appendChild(detail);
+                }
+                detail.replaceChildren();
+                const title = document.createElement("h3");
+                title.textContent = "Batch-wise items (FEFO)";
+                detail.appendChild(title);
+                const table = document.createElement("table");
+                const head = document.createElement("thead");
+                const headerRow = document.createElement("tr");
+                ["Medicine", "Batch", "Expiry", "Qty", "Price", "Total"].forEach(label => {
+                    const th = document.createElement("th");
+                    th.textContent = label;
+                    headerRow.appendChild(th);
+                });
+                head.appendChild(headerRow);
+                table.appendChild(head);
+                const body = document.createElement("tbody");
+                (sale.items || []).forEach(item => {
+                    const tr = document.createElement("tr");
+                    [item.medicineName, item.batchNumber || "—", formatDate(item.expiryDate),
+                     item.quantity, formatCurrency(item.unitPrice), formatCurrency(item.total)].forEach(value => {
+                        const td = document.createElement("td");
+                        td.textContent = String(value);
+                        tr.appendChild(td);
+                    });
+                    body.appendChild(tr);
+                });
+                table.appendChild(body);
+                detail.appendChild(table);
             }
 
             saleCart = [];
