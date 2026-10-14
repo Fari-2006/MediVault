@@ -1038,3 +1038,18 @@ tbody tr:hover {
     body.printing-purchase .purchase-invoice-table th,
     body.printing-purchase .purchase-invoice-table td { border: 1px solid #d1d5db !important; padding: 10px !important; color: #111827 !important; }
 }
+
+/* DASHBOARD ANALYTICS */
+.charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.charts-grid .panel{margin-bottom:0;min-width:0}
+.charts-grid h3{font-size:15px;margin-bottom:16px}
+.chart-bars{display:grid;gap:12px}
+.chart-row{display:grid;grid-template-columns:minmax(75px,125px) minmax(0,1fr) auto;gap:10px;align-items:center;font-size:12px}
+.chart-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.chart-track{background:#edf1f7;height:18px;border-radius:5px;overflow:hidden}
+.chart-fill{height:100%;background:#2878e5;border-radius:5px;min-width:0}
+.chart-fill.purchase{background:#e99a23}
+.chart-value{font-weight:600;font-variant-numeric:tabular-nums}
+.chart-empty{color:var(--muted);font-size:12px;padding:16px 0}
+@media(max-width:1000px){.charts-grid{grid-template-columns:1fr}}
+@media(max-width:480px){.chart-row{grid-template-columns:75px minmax(0,1fr) auto;gap:6px;font-size:11px}}
