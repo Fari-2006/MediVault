@@ -1,10 +1,11 @@
 const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
 // ==================================================
 // AUTHENTICATION MIDDLEWARE
 // ==================================================
 
-const protect = (req, res, next) => {
+const protect = async (req, res, next) => {
     try {
         // Get Authorization header
         const authHeader = req.headers.authorization;
@@ -32,8 +33,18 @@ const protect = (req, res, next) => {
             process.env.JWT_SECRET
         );
 
-        // Store user information in request
-        req.user = decoded;
+        // Never trust role/approval claims stored in an old JWT.
+        const user = await User.findById(decoded.id).select("role approvalStatus isActive mustChangePassword");
+        if (!user || !user.isActive || user.approvalStatus === "rejected") {
+            return res.status(403).json({ message: "This account is inactive or rejected." });
+        }
+        if (user.role !== "admin" && user.approvalStatus !== "approved") {
+            return res.status(403).json({ message: "Your registration is awaiting Admin approval." });
+        }
+        if (user.mustChangePassword && req.originalUrl !== "/api/auth/change-password") {
+            return res.status(403).json({ message: "Change your initial password before using the application.", code: "PASSWORD_CHANGE_REQUIRED" });
+        }
+        req.user = { id: String(user._id), role: user.role };
 
         // Continue to next function
         next();
