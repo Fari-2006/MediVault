@@ -23,10 +23,18 @@ const userSchema = new mongoose.Schema(
 
         role: {
             type: String,
-            enum: ["admin", "pharmacist", "cashier", "storekeeper"],
+            enum: ["admin", "cashier"],
             default: "cashier"
         },
 
+        approvalStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", index: true },
+        rejectionReason: { type: String, default: "" },
+        address: { type: String, trim: true, default: "" },
+        profilePhoto: { type: String, default: "" },
+        mustChangePassword: { type: Boolean, default: false },
+        joiningDate: { type: Date },
+        jobTitle: { type: String, default: "Cashier" },
+        employmentStatus: { type: String, enum: ["active", "inactive"], default: "active" },
         phone: {
             type: String,
             trim: true
