@@ -3121,3 +3121,25 @@ showPage = function(page) {
     previousStaffShowPage(page);
 };
 if (staffSection) staffSection.hidden = true;
+
+/* Homepage shell: show workspace navigation only after a valid login. */
+(function initMediVaultPublicShell() {
+    function syncShell() {
+        const signedIn = Boolean(authToken && currentUser && !currentUser.mustChangePassword);
+        document.body.classList.toggle("is-authenticated", signedIn);
+    }
+    const login = document.getElementById("loginForm");
+    const register = document.getElementById("registerForm");
+    const passwordChange = document.getElementById("passwordChangeForm");
+    // Existing submit handlers run before these observers; wait for async API completion.
+    const observer = new MutationObserver(syncShell);
+    for (const id of ["loginSection","registerSection","passwordChangeSection","appSections"]) {
+        const node = document.getElementById(id);
+        if (node) observer.observe(node, {attributes:true,attributeFilter:["hidden"]});
+    }
+    for (const form of [login,register,passwordChange]) {
+        if (form) form.addEventListener("submit", () => queueMicrotask(syncShell));
+    }
+    document.getElementById("logoutBtn")?.addEventListener("click", () => queueMicrotask(syncShell));
+    syncShell();
+})();
