@@ -250,6 +250,21 @@
 
                 </div>
 
+                <!-- DASHBOARD ANALYTICS -->
+                <section id="dashboardCharts" class="dashboard-charts" hidden>
+                    <div class="section-heading">
+                        <div><h2>Pharmacy Analytics</h2><p>Sales, purchases, best sellers and current inventory</p></div>
+                        <button type="button" class="secondary-btn" id="refreshChartsBtn">Refresh Charts</button>
+                    </div>
+                    <p id="dashboardChartsMessage" class="message" role="status"></p>
+                    <div class="charts-grid">
+                        <article class="panel"><h3>Sales Revenue — Last 7 Days</h3><div id="chartRevenue" class="chart-bars"></div></article>
+                        <article class="panel"><h3>Sales vs Purchases — Last 7 Days</h3><div id="chartSalesPurchases" class="chart-bars"></div></article>
+                        <article class="panel"><h3>Top 5 Selling Medicines (Units)</h3><div id="chartTopMedicines" class="chart-bars"></div></article>
+                        <article class="panel"><h3>Inventory Stock Distribution</h3><div id="chartStock" class="chart-bars"></div></article>
+                    </div>
+                </section>
+
                 <!-- ============================================
                      INVENTORY
                 ============================================ -->
