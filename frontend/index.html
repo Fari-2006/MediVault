@@ -156,7 +156,34 @@
                 ></p>
 
             </form>
+            <button type="button" class="secondary-btn" id="showRegisterBtn">Register as Cashier</button>
 
+        </section>
+
+        <section id="registerSection" class="panel login-panel" hidden>
+            <h2>Cashier Registration</h2>
+            <p>Apply for a cashier account. Admin approval is required.</p>
+            <form id="registerForm" class="login-form">
+                <label for="registerName">Full name</label><input id="registerName" required minlength="2" maxlength="120">
+                <label for="registerEmail">Email</label><input id="registerEmail" type="email" required>
+                <label for="registerPhone">Phone number</label><input id="registerPhone" type="tel" required>
+                <label for="registerAddress">Address</label><input id="registerAddress" required maxlength="500">
+                <label for="registerPassword">Password (10+ characters)</label><input id="registerPassword" type="password" minlength="10" required autocomplete="new-password">
+                <label for="registerConfirm">Confirm password</label><input id="registerConfirm" type="password" minlength="10" required autocomplete="new-password">
+                <button class="primary-btn" type="submit">Submit Cashier Application</button>
+                <p id="registerMessage" class="message" role="status"></p>
+            </form>
+            <button type="button" class="secondary-btn" id="backToLoginBtn">Back to Login</button>
+        </section>
+        <section id="passwordChangeSection" class="panel login-panel" hidden>
+            <h2>Change Initial Password</h2>
+            <p>You must change your initial password before accessing Medivault.</p>
+            <form id="passwordChangeForm" class="login-form">
+                <label for="currentPassword">Current password</label><input id="currentPassword" type="password" required>
+                <label for="newPassword">New password (10+ characters)</label><input id="newPassword" type="password" minlength="10" required>
+                <button type="submit" class="primary-btn">Change Password</button>
+                <p id="passwordChangeMessage" class="message" role="status"></p>
+            </form>
         </section>
 
         <!-- ============================================
