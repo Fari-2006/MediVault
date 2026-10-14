@@ -1,157 +1,74 @@
+"use strict";
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
 const User = require("../models/User");
-
+const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
-
-// ==================================================
-// REGISTER
-// POST /api/auth/register
-// ==================================================
-
+const cleanEmail = email => String(email || "").trim().toLowerCase();
+const publicUser = user => ({
+  id: user._id, name: user.name, email: user.email, role: user.role,
+  phone: user.phone, address: user.address, approvalStatus: user.approvalStatus,
+  mustChangePassword: !!user.mustChangePassword
+});
 router.post("/register", async (req, res) => {
-    try {
-        const { name, email, password, role, phone } = req.body;
-
-        // Check required fields
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                message: "Name, email and password are required"
-            });
-        }
-
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser) {
-            return res.status(400).json({
-                message: "User with this email already exists"
-            });
-        }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create user
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            role: role || "cashier",
-            phone
-        });
-
-        // Send response
-        res.status(201).json({
-            message: "User registered successfully",
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                phone: user.phone
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Registration failed",
-            error: error.message
-        });
+  try {
+    const { name, password, confirmPassword, phone, address } = req.body || {};
+    const email = cleanEmail(req.body?.email);
+    if (typeof name !== "string" || name.trim().length < 2 || name.length > 120 ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
+        typeof phone !== "string" || !/^[+\d ()-]{7,20}$/.test(phone) ||
+        typeof address !== "string" || !address.trim() || address.length > 500 ||
+        typeof password !== "string" || password.length < 10 || password.length > 128 ||
+        password !== confirmPassword) {
+      return res.status(400).json({ message: "Enter valid name, email, phone, address and matching password (at least 10 characters)." });
     }
-});
-
-
-// ==================================================
-// LOGIN
-// POST /api/auth/login
-// ==================================================
-
-router.post("/login", async (req, res) => {
-    try {
-        const { email, password } = req.body;
-
-        // Check required fields
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Email and password are required"
-            });
-        }
-
-        // Find user
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(401).json({
-                message: "Invalid email or password"
-            });
-        }
-
-        // Check if account is active
-        if (!user.isActive) {
-            return res.status(403).json({
-                message: "Your account is inactive"
-            });
-        }
-
-        // Compare password
-        const isPasswordCorrect = await bcrypt.compare(
-            password,
-            user.password
-        );
-
-        if (!isPasswordCorrect) {
-            return res.status(401).json({
-                message: "Invalid email or password"
-            });
-        }
-
-        // Create JWT token
-        const token = jwt.sign(
-            {
-                id: user._id,
-                role: user.role
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: "1d"
-            }
-        );
-
-        // Send response
-        res.status(200).json({
-            message: "Login successful",
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                phone: user.phone
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Login failed",
-            error: error.message
-        });
-    }
-});
-
-
-// ==================================================
-// LOGOUT
-// POST /api/auth/logout
-// ==================================================
-
-router.post("/logout", (req, res) => {
-    res.status(200).json({
-        message: "Logout successful"
+    if (await User.exists({ email })) return res.status(409).json({ message: "An account with this email already exists." });
+    const user = await User.create({
+      name: name.trim(), email, phone: phone.trim(), address: address.trim(),
+      password: await bcrypt.hash(password, 12), role: "cashier",
+      approvalStatus: "pending", isActive: false
     });
+    res.status(201).json({ message: "Your registration is awaiting Admin approval.", user: publicUser(user) });
+  } catch (error) {
+    if (error.code === 11000) return res.status(409).json({ message: "An account with this email already exists." });
+    console.error("Registration error:", error);
+    res.status(500).json({ message: "Registration failed." });
+  }
 });
-
-
+router.post("/login", async (req, res) => {
+  try {
+    const email = cleanEmail(req.body?.email);
+    const password = req.body?.password;
+    if (!email || typeof password !== "string") return res.status(400).json({ message: "Email and password are required." });
+    const user = await User.findOne({ email });
+    if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ message: "Invalid email or password." });
+    if (user.role !== "admin" && user.approvalStatus === "pending") return res.status(403).json({ message: "Your registration is awaiting Admin approval." });
+    if (user.approvalStatus === "rejected") return res.status(403).json({ message: "Your registration was rejected." });
+    if (!user.isActive) return res.status(403).json({ message: "Your account is inactive. Contact the Admin." });
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "8h" });
+    res.json({ message: "Login successful", token, user: publicUser(user) });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Login failed." });
+  }
+});
+router.post("/change-password", protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (typeof newPassword !== "string" || newPassword.length < 10 || newPassword.length > 128)
+    return res.status(400).json({ message: "New password must contain 10–128 characters." });
+  const user = await User.findById(req.user.id);
+  if (!user || typeof currentPassword !== "string" || !(await bcrypt.compare(currentPassword, user.password)))
+    return res.status(401).json({ message: "Current password is incorrect." });
+  if (currentPassword === newPassword) return res.status(400).json({ message: "Choose a different password." });
+  user.password = await bcrypt.hash(newPassword, 12);
+  user.mustChangePassword = false;
+  await user.save();
+  res.json({ message: "Password changed successfully. Log in again." });
+});
+router.get("/me", protect, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  res.json({ user: publicUser(user) });
+});
+router.post("/logout", (_req, res) => res.json({ message: "Log out by discarding your session token." }));
 module.exports = router;
