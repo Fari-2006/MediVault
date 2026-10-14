@@ -12,6 +12,12 @@
 </head>
 
 <body>
+<header class="public-header" id="publicHeader">
+  <a class="public-brand" href="#home" aria-label="MediVault home"><span class="public-brand-symbol">✚</span><span><strong>Medi<span>Vault</span></strong><small>PHARMACY MANAGEMENT SYSTEM</small></span></a>
+  <nav class="public-nav" aria-label="Homepage navigation"><a href="#home" class="public-active">Home</a><a href="#features">Features</a><a href="#about">About</a><a href="#why-medivault">Why MediVault</a><a href="#contact">Contact</a></nav>
+  <a class="public-help" href="mailto:support@medivault.example?subject=MediVault%20Help" title="Contact your pharmacy administrator">ⓘ &nbsp; Need Help?</a>
+</header>
+
 
 <div class="app">
 
@@ -118,28 +124,28 @@
         <!-- ============================================
              LOGIN
         ============================================ -->
-        <!-- Public welcome screen; app navigation remains hidden until login. -->
-        <section class="welcome-hero" aria-label="About MediVault">
-            <div class="welcome-hero-inner">
-                <div class="welcome-kicker"><span class="welcome-kicker-dot"></span> YOUR PHARMACY. SIMPLIFIED.</div>
-                <div class="welcome-mark" aria-hidden="true">✚</div>
-                <h2>Smarter pharmacy.<br><span>Better care.</span></h2>
-                <p class="welcome-lead">Manage your medicines, billing, inventory and daily operations in one secure workspace.</p>
-                <div class="welcome-feature-list">
-                    <div><span class="welcome-feature-icon">▤</span><span><strong>Inventory clarity</strong><small>Batch tracking, low-stock and expiry alerts</small></span></div>
-                    <div><span class="welcome-feature-icon">▧</span><span><strong>Faster billing</strong><small>Easy sales, GST and printable invoices</small></span></div>
-                    <div><span class="welcome-feature-icon">◈</span><span><strong>Controlled access</strong><small>Dedicated Admin and Cashier accounts</small></span></div>
-                </div>
-                <div class="welcome-footnote">MEDIVAULT <span>•</span> WEB-BASED PHARMACY MANAGEMENT SYSTEM</div>
+        <section class="welcome-hero" id="home" aria-label="About MediVault">
+          <div class="welcome-hero-inner">
+            <div class="welcome-kicker">WEB-BASED PHARMACY MANAGEMENT SYSTEM</div>
+            <h2>Smarter pharmacy.<br><span>Better care.</span></h2>
+            <p class="welcome-lead">Manage your inventory, sales, purchases and staff with ease. MediVault helps you run your pharmacy efficiently, accurately and securely.</p>
+            <div class="public-feature-grid" id="features">
+              <div><span>💊</span><strong>Inventory<br>Management</strong></div>
+              <div><span>🛒</span><strong>Sales &amp;<br>Billing</strong></div>
+              <div><span>📦</span><strong>Purchase<br>Management</strong></div>
+              <div><span>👥</span><strong>Staff<br>Management</strong></div>
             </div>
+            <ul class="public-benefits" id="about"><li>Real-time stock tracking</li><li>Expiry and low-stock alerts</li><li>Role-based access for Admin &amp; Cashier</li></ul>
+            <div class="public-value-strip" id="why-medivault"><div>🛡️ <span>Secure<br>&amp; Reliable</span></div><div>⚡ <span>Real-time<br>Updates</span></div><div>▥ <span>Better<br>Decisions</span></div><div>♥ <span>Better<br>Healthcare</span></div></div>
+          </div>
         </section>
 
         <section id="loginSection" class="panel login-panel">
 
             <div class="section-heading">
                 <div>
-                    <h2>Welcome to MediVault</h2>
-                    <p>Securely access your pharmacy workspace.</p>
+                    <div class="public-login-brand"><span class="public-brand-symbol">✚</span><span><strong>Medi<span>Vault</span></strong><small>PHARMACY MANAGEMENT SYSTEM</small></span></div><h2>Welcome Back</h2>
+                    <p>Log in to access your pharmacy workspace.</p>
                 </div>
             </div>
 
@@ -176,7 +182,7 @@
                 ></p>
 
             </form>
-            <button type="button" class="secondary-btn" id="showRegisterBtn">Register as Cashier</button>
+            <div class="public-login-divider"><span>OR</span></div><button type="button" class="secondary-btn" id="showRegisterBtn">♙ &nbsp; Register as Cashier</button><p class="public-register-note">New to MediVault? Register as a Cashier and wait for Admin approval.</p><div class="public-admin-note"><strong>🛡️ &nbsp; For Admins</strong><span>Use your registered admin credentials to access the full system.</span></div>
 
         </section>
 
