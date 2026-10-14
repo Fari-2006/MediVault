@@ -2763,3 +2763,124 @@ showPage = function(page) {
     previousPurchaseShowPage(page);
 };
 if (purchasesSection) purchasesSection.hidden = true;
+
+
+// ============================================
+// SALES & PURCHASE REPORTS
+// ============================================
+let latestReport = null;
+const reportsSection = $("reportsSection");
+const reportMessage = $("reportMessage");
+function reportFillTable(id, rows, fields) {
+    const body = $(id);
+    if (!body) return;
+    body.replaceChildren();
+    if (!rows.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = fields.length;
+        td.className = "empty-state";
+        td.textContent = "No records for this date range.";
+        tr.appendChild(td);
+        body.appendChild(tr);
+        return;
+    }
+    for (const item of rows) {
+        const tr = document.createElement("tr");
+        for (const field of fields) {
+            const td = document.createElement("td");
+            td.textContent = String(field(item) ?? "—");
+            tr.appendChild(td);
+        }
+        body.appendChild(tr);
+    }
+}
+async function loadReports() {
+    if (!authToken || currentUser?.role !== "admin") return;
+    const from = $("reportFrom")?.value || "";
+    const to = $("reportTo")?.value || "";
+    if (from && to && from > to) {
+        setMessage(reportMessage, "From date must not be later than To date.", "error");
+        return;
+    }
+    setMessage(reportMessage, "Loading reports...");
+    try {
+        const params = new URLSearchParams();
+        if (from) params.set("from", from);
+        if (to) params.set("to", to);
+        const data = await apiRequest("/reports" + (params.size ? "?" + params : ""));
+        latestReport = data;
+        const summary = data.summary;
+        $("reportRevenue").textContent = formatCurrency(summary.revenue);
+        $("reportExpenses").textContent = formatCurrency(summary.purchaseExpenses);
+        $("reportProfit").textContent = formatCurrency(summary.estimatedGrossProfit);
+        $("reportSalesCount").textContent = String(summary.salesCount);
+        $("reportPurchasesCount").textContent = String(summary.purchasesCount);
+        reportFillTable("reportDailyBody", data.daily, [
+            x => x.date, x => formatCurrency(x.sales), x => formatCurrency(x.purchases)
+        ]);
+        reportFillTable("reportTopBody", data.topMedicines, [
+            x => x.medicineName, x => x.quantity, x => formatCurrency(x.revenue)
+        ]);
+        reportFillTable("reportSalesBody", data.sales, [
+            x => x.invoiceNumber, x => formatDate(x.date), x => x.paymentMethod,
+            x => x.itemCount, x => formatCurrency(x.total)
+        ]);
+        reportFillTable("reportPurchasesBody", data.purchases, [
+            x => x.purchaseNumber, x => formatDate(x.date), x => x.medicineName,
+            x => x.batchNumber, x => x.quantity, x => formatCurrency(x.total)
+        ]);
+        setMessage(reportMessage, summary.missingCostItems
+            ? "Reports loaded. Note: " + summary.missingCostItems + " sold line item(s) lack a current purchase cost, so profit may be overstated."
+            : "Reports loaded successfully.", summary.missingCostItems ? "error" : "success");
+    } catch (error) {
+        latestReport = null;
+        setMessage(reportMessage, error.message, "error");
+    }
+}
+$("reportApplyBtn")?.addEventListener("click", loadReports);
+$("reportRefreshBtn")?.addEventListener("click", loadReports);
+$("reportClearBtn")?.addEventListener("click", () => {
+    $("reportFrom").value = "";
+    $("reportTo").value = "";
+    loadReports();
+});
+$("reportExportBtn")?.addEventListener("click", () => {
+    if (!latestReport) return showToast("Load reports before exporting.", true);
+    const csvRows = [["Type", "Reference", "Date", "Medicine", "Batch", "Quantity", "Amount"]];
+    for (const x of latestReport.sales) csvRows.push(["Sale", x.invoiceNumber, x.date, "", "", x.itemCount, x.total]);
+    for (const x of latestReport.purchases) csvRows.push(["Purchase", x.purchaseNumber, x.date, x.medicineName, x.batchNumber, x.quantity, x.total]);
+    const quote = value => '"' + String(value ?? "").replace(/"/g, '""').replace(/^[=+@\-\t\r]/, "'$&") + '"';
+    const csv = csvRows.map(row => row.map(quote).join(",")).join("\r\n");
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "medivault-report.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+    showToast("Report CSV exported (up to 100 transactions per type).");
+});
+const previousReportsShowPage = showPage;
+showPage = function(page) {
+    if (reportsSection) reportsSection.hidden = page !== "reports";
+    if (page === "reports") {
+        if (!authToken) return;
+        if (currentUser?.role !== "admin") {
+            showToast("Reports are available to admins only.", true);
+            return previousReportsShowPage("dashboard");
+        }
+        previousReportsShowPage("dashboard");
+        if (dashboardSection) dashboardSection.hidden = true;
+        if ($("suppliersSection")) $("suppliersSection").hidden = true;
+        if (purchasesSection) purchasesSection.hidden = true;
+        $("pageTitle").textContent = "Sales & Purchase Reports";
+        document.querySelectorAll(".nav-link").forEach(link => {
+            link.classList.toggle("active", link.dataset.page === "reports");
+        });
+        loadReports();
+        return;
+    }
+    previousReportsShowPage(page);
+};
+if (reportsSection) reportsSection.hidden = true;
