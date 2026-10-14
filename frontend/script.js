@@ -2983,7 +2983,7 @@ if (dashboardCharts) dashboardCharts.hidden = true;
 function applyRoleNavigation() {
     const cashier = currentUser?.role === "cashier";
     document.querySelectorAll('.nav-link').forEach(link => {
-        link.hidden = cashier && ["purchases","suppliers","reports"].includes(link.dataset.page);
+        link.hidden = cashier && ["purchases","suppliers","reports","staff"].includes(link.dataset.page);
     });
     const charts = $("dashboardCharts");
     if (charts && cashier) charts.hidden = true;
@@ -3042,3 +3042,82 @@ $("passwordChangeForm")?.addEventListener("submit", async event => {
         setMessage($("passwordChangeMessage"), error.message, "error");
     } finally { button.disabled = false; }
 });
+
+
+// ADMIN STAFF APPROVALS
+const staffSection = $("staffSection");
+async function loadStaff() {
+    if (currentUser?.role !== "admin") return;
+    const status = $("staffStatusFilter")?.value || "";
+    setMessage($("staffMessage"), "Loading staff...");
+    try {
+        const data = await apiRequest("/staff" + (status ? "?status=" + encodeURIComponent(status) : ""));
+        const body = $("staffTableBody");
+        body.replaceChildren();
+        if (!data.staff.length) {
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 6; td.textContent = "No staff records.";
+            tr.appendChild(td); body.appendChild(tr);
+        }
+        for (const person of data.staff) {
+            const tr = document.createElement("tr");
+            for (const value of [person.name,person.email,person.phone,person.address,person.approvalStatus]) {
+                const td = document.createElement("td");
+                td.textContent = value || "—"; tr.appendChild(td);
+            }
+            const actions = document.createElement("td");
+            const actionList = person.approvalStatus === "pending"
+                ? [["Approve","approve"],["Reject","reject"]]
+                : person.approvalStatus === "approved"
+                    ? [[person.isActive ? "Deactivate" : "Activate", person.isActive ? "deactivate" : "activate"]]
+                    : [];
+            for (const [label,action] of actionList) {
+                const button = document.createElement("button");
+                button.type = "button"; button.className = "secondary-btn";
+                button.textContent = label;
+                button.addEventListener("click", async () => {
+                    if (!window.confirm(label + " " + person.name + "?")) return;
+                    const reason = action === "reject" ? window.prompt("Optional rejection reason:", "") : "";
+                    if (action === "reject" && reason === null) return;
+                    try {
+                        if (["approve","reject"].includes(action)) {
+                            await apiRequest("/staff/" + encodeURIComponent(person.id) + "/approval", {
+                                method:"PATCH", body: JSON.stringify({ action, reason })
+                            });
+                        } else {
+                            await apiRequest("/staff/" + encodeURIComponent(person.id) + "/status", {
+                                method:"PATCH", body: JSON.stringify({ isActive: action === "activate" })
+                            });
+                        }
+                        showToast("Staff updated.");
+                        await loadStaff();
+                    } catch(error) { showToast(error.message,true); }
+                });
+                actions.appendChild(button);
+            }
+            tr.appendChild(actions); body.appendChild(tr);
+        }
+        setMessage($("staffMessage"), "Staff loaded.", "success");
+    } catch(error) { setMessage($("staffMessage"), error.message, "error"); }
+}
+$("staffStatusFilter")?.addEventListener("change", loadStaff);
+$("staffRefreshBtn")?.addEventListener("click", loadStaff);
+const previousStaffShowPage = showPage;
+showPage = function(page) {
+    if (staffSection) staffSection.hidden = page !== "staff";
+    if (page === "staff") {
+        if (!authToken || currentUser?.role !== "admin") return;
+        previousStaffShowPage("dashboard");
+        if (dashboardSection) dashboardSection.hidden = true;
+        if (purchasesSection) purchasesSection.hidden = true;
+        if (reportsSection) reportsSection.hidden = true;
+        if ($("suppliersSection")) $("suppliersSection").hidden = true;
+        $("pageTitle").textContent = "Staff Management";
+        document.querySelectorAll(".nav-link").forEach(link => link.classList.toggle("active",link.dataset.page === "staff"));
+        loadStaff();
+        return;
+    }
+    previousStaffShowPage(page);
+};
+if (staffSection) staffSection.hidden = true;
