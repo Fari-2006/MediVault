@@ -3143,3 +3143,144 @@ if (staffSection) staffSection.hidden = true;
     document.getElementById("logoutBtn")?.addEventListener("click", () => queueMicrotask(syncShell));
     syncShell();
 })();
+
+
+/* =====================================================
+   MEDIVAULT DASHBOARD V2 — LIVE DATA, NO MOCK VALUES
+   ===================================================== */
+(function setupDashboardV2(){
+    const byId = id => document.getElementById(id);
+    const menuButton=byId("accountMenuBtn"), menu=byId("accountMenu");
+    const closeMenu=()=>{if(menu)menu.hidden=true;if(menuButton)menuButton.setAttribute("aria-expanded","false");};
+    menuButton?.addEventListener("click",()=>{
+        const opening=menu.hidden;menu.hidden=!opening;menuButton.setAttribute("aria-expanded",String(opening));
+    });
+    document.addEventListener("click",event=>{
+        if(menu && !menu.hidden && !event.target.closest(".account-menu-wrap"))closeMenu();
+    });
+    document.addEventListener("keydown",event=>{if(event.key==="Escape")closeMenu();});
+    const setAccount=()=>{
+        const loggedIn=Boolean(authToken&&currentUser&&!currentUser.mustChangePassword);
+        if(!loggedIn){closeMenu();return;}
+        const displayName=(currentUser.name||currentUser.email?.split("@")[0]||"User").trim();
+        const avatar=byId("accountAvatar"),welcome=byId("welcomeUserName");
+        if(avatar)avatar.textContent=displayName.charAt(0).toUpperCase();
+        if(welcome)welcome.textContent=displayName;
+        if(byId("userName"))byId("userName").textContent=displayName;
+        if(byId("userRole"))byId("userRole").textContent=currentUser.role||"user";
+    };
+    const date=byId("headerDate");
+    if(date)date.textContent=new Intl.DateTimeFormat("en-IN",{weekday:"long",day:"numeric",month:"short",year:"numeric"}).format(new Date());
+    const showAccountPanel=(id)=>{
+        closeMenu();
+        byId("profilePanel").hidden=id!=="profilePanel";
+        byId("accountPasswordPanel").hidden=id!=="accountPasswordPanel";
+        if(byId("dashboardWelcome"))byId("dashboardWelcome").hidden=true;
+        if(dashboardSection)dashboardSection.hidden=true;
+        if(byId("dashboardMainGrid"))byId("dashboardMainGrid").hidden=true;
+        if(byId("pageTitle"))byId("pageTitle").textContent=id==="profilePanel"?"My Profile":"Change Password";
+        if(id==="profilePanel"){
+            byId("profileName").textContent=currentUser?.name||"—";
+            byId("profileEmail").textContent=currentUser?.email||"—";
+            byId("profileRole").textContent=currentUser?.role||"—";
+        }
+    };
+    byId("profileMenuBtn")?.addEventListener("click",()=>showAccountPanel("profilePanel"));
+    byId("changePasswordMenuBtn")?.addEventListener("click",()=>showAccountPanel("accountPasswordPanel"));
+    for(const id of ["closeProfileBtn","closeAccountPasswordBtn"]){
+        byId(id)?.addEventListener("click",()=>showPage("dashboard"));
+    }
+    byId("accountPasswordForm")?.addEventListener("submit",async event=>{
+        event.preventDefault();
+        const btn=event.currentTarget.querySelector('button[type="submit"]');
+        btn.disabled=true;
+        try{
+            const result=await apiRequest("/auth/change-password",{
+                method:"POST",
+                body:JSON.stringify({currentPassword:byId("accountCurrentPassword").value,newPassword:byId("accountNewPassword").value})
+            });
+            byId("accountPasswordForm").reset();
+            setMessage(byId("accountPasswordMessage"),result.message||"Password changed. Please sign in again.","success");
+            logout(false);
+            showToast("Password changed. Log in with your new password.");
+        }catch(error){setMessage(byId("accountPasswordMessage"),error.message,"error");}
+        finally{btn.disabled=false;}
+    });
+    const quickSearch=byId("globalSearch");
+    quickSearch?.addEventListener("keydown",event=>{
+        if(event.key!=="Enter")return;
+        event.preventDefault();
+        const query=quickSearch.value.trim();
+        if(!query)return;
+        showPage("inventory");
+        const inventorySearch=byId("searchInput");
+        if(inventorySearch){inventorySearch.value=query;inventorySearch.dispatchEvent(new Event("input",{bubbles:true}));inventorySearch.focus();}
+    });
+    document.querySelectorAll("[data-go]").forEach(button=>button.addEventListener("click",()=>{
+        const target=button.dataset.go;
+        if(button.hasAttribute("data-admin-only")&&currentUser?.role!=="admin")return;
+        showPage(target);
+        if(target==="inventory"&&button.classList.contains("inventory"))byId("addMedicineBtn")?.click();
+    }));
+    const chartRevenue=byId("chartRevenue"),chartTop=byId("chartTopMedicines");
+    if(chartRevenue&&byId("dashboardRevenueHost"))byId("dashboardRevenueHost").appendChild(chartRevenue);
+    if(chartTop&&byId("dashboardTopHost"))byId("dashboardTopHost").appendChild(chartTop);
+    const colors=["#09a99f","#2c85ed","#ffab38","#a6b6c9","#7e63e9","#e96773"];
+    async function loadNewDashboard(){
+        if(!authToken||!currentUser)return;
+        const cashier=currentUser.role==="cashier";
+        document.querySelectorAll("[data-admin-only]").forEach(el=>el.hidden=cashier);
+        const categoryLegend=byId("categoryLegend"),donut=byId("categoryDonut");
+        try{
+            const result=await apiRequest("/medicines");
+            const items=Array.isArray(result)?result:(result.medicines||[]);
+            const byCategory=new Map();
+            for(const med of items){
+                const key=med.category||"Others";
+                byCategory.set(key,(byCategory.get(key)||0)+Number(med.quantity||0));
+            }
+            const total=[...byCategory.values()].reduce((a,b)=>a+b,0);
+            byId("categoryTotal").textContent=String(total);
+            categoryLegend.replaceChildren();
+            let start=0;const stops=[];
+            for(const [i,[name,value]] of [...byCategory].sort((a,b)=>b[1]-a[1]).slice(0,6).entries()){
+                const color=colors[i%colors.length],pct=total?value/total*100:0;
+                stops.push(color+" "+start+"% "+(start+pct)+"%");start+=pct;
+                const line=document.createElement("div");
+                const dot=document.createElement("i");dot.style.background=color;
+                const label=document.createElement("span");label.textContent=name;
+                const percent=document.createElement("strong");percent.textContent=Math.round(pct)+"%";
+                line.append(dot,label,percent);categoryLegend.appendChild(line);
+            }
+            if(donut)donut.style.background=stops.length?"conic-gradient("+stops.join(",")+")":"#e6eef1";
+        }catch(error){console.warn("Dashboard categories:",error.message);}
+        try{
+            const result=await apiRequest("/sales");
+            const list=(result.sales||[]).slice().sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
+            const tbody=byId("dashboardRecentSales");tbody.replaceChildren();
+            if(!list.length){const tr=tbody.insertRow();const td=tr.insertCell();td.colSpan=6;td.textContent="No recent sales yet.";}
+            for(const sale of list){
+                const row=tbody.insertRow();
+                const values=[sale.invoiceNumber||"—",formatDate(sale.createdAt),sale.items?.length||0,sale.paymentMethod||"—",formatCurrency(sale.grandTotal),sale.status||"—"];
+                for(const value of values){const cell=row.insertCell();cell.textContent=String(value);}
+            }
+        }catch(error){const tbody=byId("dashboardRecentSales");if(tbody)tbody.textContent="Unable to load sales.";}
+    }
+    const previousShowPage=showPage;
+    showPage=function(page){
+        byId("profilePanel").hidden=true;
+        byId("accountPasswordPanel").hidden=true;
+        previousShowPage(page);
+        const dashboard=page==="dashboard"&&Boolean(authToken);
+        byId("dashboardWelcome").hidden=!dashboard;
+        byId("dashboardMainGrid").hidden=!dashboard;
+        setAccount();
+        if(dashboard){loadNewDashboard();}
+    };
+    const app=byId("appSections");
+    if(app)new MutationObserver(()=>{
+        setAccount();
+        if(app.hidden){byId("dashboardWelcome").hidden=true;byId("dashboardMainGrid").hidden=true;}
+    }).observe(app,{attributes:true,attributeFilter:["hidden"]});
+    setAccount();
+})();
