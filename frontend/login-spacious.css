@@ -1,0 +1,132 @@
+/* MediVault login-page readability and spacious layout
+   Keeps all existing form controls, IDs, and authentication logic intact. */
+body:not(.is-authenticated) {
+  font-family: Inter, "Segoe UI", sans-serif;
+  font-size: 16px;
+}
+body:not(.is-authenticated) .public-header {
+  min-height: 86px;
+  padding-inline: clamp(28px, 4.2vw, 90px);
+}
+body:not(.is-authenticated) .public-brand strong { font-size: 27px; }
+body:not(.is-authenticated) .public-brand small { font-size: 11px; }
+body:not(.is-authenticated) .public-nav a { font-size: 15px; }
+body:not(.is-authenticated) .public-help { font-size: 14px; }
+body:not(.is-authenticated) .main-content {
+  grid-template-columns: minmax(0, 1.12fr) minmax(510px, .88fr);
+  min-height: calc(100vh - 86px);
+  background: linear-gradient(110deg, #f8fdfd 0%, #edf9f8 49%, #d5f0ee 100%);
+}
+body:not(.is-authenticated) .welcome-hero {
+  min-height: calc(100vh - 86px);
+  padding: clamp(42px, 5vw, 90px) clamp(40px, 5vw, 100px);
+  background: transparent;
+}
+body:not(.is-authenticated) .welcome-hero-inner { max-width: 780px; width: 100%; }
+body:not(.is-authenticated) .welcome-kicker {
+  font-size: 13px;
+  letter-spacing: 2px;
+  margin-bottom: 28px;
+}
+body:not(.is-authenticated) .welcome-hero h2 {
+  font-size: clamp(48px, 4.8vw, 82px);
+  line-height: 1.08;
+  letter-spacing: -2.8px;
+}
+body:not(.is-authenticated) .welcome-lead {
+  max-width: 680px;
+  font-size: clamp(18px, 1.4vw, 21px);
+  line-height: 1.65;
+  margin: 26px 0 34px;
+}
+body:not(.is-authenticated) .public-feature-grid { display: none; }
+body:not(.is-authenticated) .public-benefits {
+  display: grid;
+  gap: 18px;
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 32px 0 0;
+}
+body:not(.is-authenticated) .public-benefits li::before { width: 25px; height: 25px; font-size: 15px; }
+body:not(.is-authenticated) .public-value-strip { display: none; }
+body:not(.is-authenticated) .login-panel {
+  width: calc(100% - clamp(48px, 6vw, 110px));
+  max-width: 610px;
+  padding: clamp(32px, 3.3vw, 56px);
+  margin: 36px auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, .075);
+}
+body:not(.is-authenticated) .public-login-brand { margin-bottom: 30px; }
+body:not(.is-authenticated) .public-login-brand strong { font-size: 29px; }
+body:not(.is-authenticated) .public-login-brand small { font-size: 11px; }
+body:not(.is-authenticated) #loginSection .section-heading { margin-bottom: 30px; }
+body:not(.is-authenticated) #loginSection .section-heading h2 { font-size: 30px; }
+body:not(.is-authenticated) #loginSection .section-heading p { font-size: 16px; line-height: 1.5; margin-top: 9px; }
+body:not(.is-authenticated) .login-panel .login-form { gap: 16px; }
+body:not(.is-authenticated) .login-panel .login-form label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+}
+body:not(.is-authenticated) .login-panel .login-form input {
+  min-height: 54px;
+  font-size: 16px;
+  padding: 13px 16px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+}
+body:not(.is-authenticated) .login-panel .login-form input:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, .16);
+}
+body:not(.is-authenticated) .login-panel .primary-btn {
+  min-height: 54px;
+  font-size: 16px;
+  font-weight: 700;
+  background: #0d9488;
+  border-radius: 8px;
+}
+body:not(.is-authenticated) .login-panel .primary-btn:hover { background: #0f766e; }
+body:not(.is-authenticated) .public-login-divider { font-size: 14px; margin: 28px 0; }
+body:not(.is-authenticated) #showRegisterBtn {
+  min-height: 52px;
+  font-size: 15px;
+  font-weight: 600;
+}
+body:not(.is-authenticated) .public-register-note { font-size: 14px; margin: 14px 0 0; }
+body:not(.is-authenticated) .public-admin-note { display: none; }
+body:not(.is-authenticated) .login-panel .message:not(:empty) {
+  display: block;
+  min-height: 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #f1f5f9;
+}
+body:not(.is-authenticated) .login-panel .message.error { background: #fef2f2; color: #b91c1c; }
+body:not(.is-authenticated) .login-panel .message.success { background: #f0fdf4; color: #15803d; }
+@media (max-width: 1150px) {
+  body:not(.is-authenticated) .main-content { grid-template-columns: minmax(0, 1fr) minmax(430px, .95fr); }
+  body:not(.is-authenticated) .welcome-hero { padding: 42px 32px; }
+  body:not(.is-authenticated) .welcome-hero h2 { font-size: clamp(42px, 4.4vw, 62px); }
+  body:not(.is-authenticated) .login-panel { width: calc(100% - 44px); padding: 32px; }
+}
+@media (max-width: 850px) {
+  body:not(.is-authenticated) .main-content { display: flex; flex-direction: column; min-height: 0; }
+  body:not(.is-authenticated) .welcome-hero { min-height: 0; padding: 44px 26px 20px; }
+  body:not(.is-authenticated) .welcome-hero h2 { font-size: clamp(39px, 7vw, 58px); }
+  body:not(.is-authenticated) .welcome-lead { font-size: 17px; }
+  body:not(.is-authenticated) .public-benefits { font-size: 15px; gap: 12px; }
+  body:not(.is-authenticated) .login-panel { width: min(600px, calc(100% - 36px)); margin: 24px auto 36px; }
+}
+@media (max-width: 480px) {
+  body:not(.is-authenticated) .public-header { padding: 14px 18px; }
+  body:not(.is-authenticated) .welcome-hero { padding: 32px 20px 12px; }
+  body:not(.is-authenticated) .welcome-hero h2 { font-size: 40px; letter-spacing: -1.5px; }
+  body:not(.is-authenticated) .login-panel { padding: 25px 20px; }
+  body:not(.is-authenticated) #loginSection .section-heading h2 { font-size: 26px; }
+}
