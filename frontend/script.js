@@ -2186,6 +2186,7 @@ function renderSupplierTable() {
                     >
                         Edit
                     </button>
+                    <button type="button" class="action-btn" data-supplier-action="toggle" data-id="${escapeHTML(supplier._id)}">${supplier.status === "active" ? "Deactivate" : "Activate"}</button>
                     <button
                         type="button"
                         class="action-btn delete-btn"
@@ -2223,7 +2224,7 @@ function openSupplierModal(supplier = null) {
 
     supplierForm.reset();
     supplierIdInput.value = "";
-    $("supplierStatus").value = "active";
+    $("supplierStatus").value = "inactive";
 
     setMessage(supplierFormMessage, "");
 
@@ -2418,6 +2419,22 @@ supplierTableBody?.addEventListener(
             return;
         }
 
+        if (action === "toggle") {
+            const next = supplier.status === "active" ? "inactive" : "active";
+            if (!window.confirm((next === "active" ? "Activate" : "Deactivate") + ' supplier "' + supplier.supplierName + '"?')) return;
+            button.disabled = true;
+            try {
+                await apiRequest("/suppliers/" + encodeURIComponent(id) + "/status", {
+                    method: "PATCH", body: JSON.stringify({ status: next })
+                });
+                await loadSuppliers();
+                showToast("Supplier " + (next === "active" ? "activated." : "deactivated."));
+            } catch (error) {
+                showToast(error.message, true);
+                button.disabled = false;
+            }
+            return;
+        }
         if (action === "edit") {
             openSupplierModal(supplier);
             return;
