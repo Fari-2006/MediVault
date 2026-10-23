@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 
 const supplierSchema = new mongoose.Schema(
     {
+        linkedUser: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true, sparse: true },
         supplierName: {
             type: String,
             required: true,
