@@ -2,7 +2,7 @@
 (() => {
  const $ = id => document.getElementById(id);
  const api = async (path, options={}) => {
-   const response=await fetch("http://localhost:5000/api"+path,{
+   const response=await fetch("/api"+path,{
      ...options,headers:{"Authorization":"Bearer "+authToken,...(options.body?{"Content-Type":"application/json"}:{}),...(options.headers||{})}
    });
    const data=await response.json();
@@ -95,36 +95,4 @@
    if($("kpiDetailRows")?.querySelector("tr:not([data-restock-ready])"))enhanceLowStock();
  });
  const root=$("kpiDetailRows");if(root)observer.observe(root,{childList:true});
- // Supplier dashboard: show new requests and status actions, independent of received purchase history.
- const panel=$("supplierPortalPanel");
- if(panel){
-   const section=el("section");section.className="restock-supplier-section";
-   section.append(el("h3","Restock Requests"));
-   const message=el("p");message.setAttribute("role","status");section.append(message);
-   const list=el("div");section.append(list);
-   panel.insertBefore(section,$("supplierOrderRows"));
-   const load=async()=>{
-     if(typeof currentUser==="undefined"||currentUser?.role!=="supplier"||panel.hidden)return;
-     try{
-       const data=await api("/restock-requests/supplier");list.replaceChildren();
-       message.textContent=data.requests.length+" restock request(s)";
-       for(const req of data.requests){
-         const card=el("div");card.className="restock-supplier-row";
-         card.append(el("strong",req.medicineName+" — "+req.batchNumber));
-         card.append(el("span","Qty: "+req.quantityRequested+" · "+req.status));
-         card.append(el("small","From "+req.requestedByName+" · "+new Date(req.createdAt).toLocaleString()));
-         if(req.note)card.append(el("small","Note: "+req.note));
-         const actions=req.status==="Pending"?[["accept","Accept"],["reject","Reject"]]:req.status==="Accepted"?[["deliver","Mark as Delivered"]]:[];
-         for(const [action,label] of actions){
-           const b=el("button",label);b.type="button";b.className="secondary-btn";
-           b.addEventListener("click",async()=>{b.disabled=true;try{await api("/restock-requests/"+req._id+"/status",{method:"PATCH",body:JSON.stringify({action})});await load();}catch(error){message.textContent=error.message;b.disabled=false;}});
-           card.append(b);
-         }
-         list.append(card);
-       }
-     }catch(error){message.textContent=error.message;}
-   };
-   const watcher=new MutationObserver(()=>{if(!panel.hidden)load();});
-   watcher.observe(panel,{attributes:true,attributeFilter:["hidden"]});
- }
 })();

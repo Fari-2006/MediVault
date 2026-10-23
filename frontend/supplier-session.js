@@ -36,7 +36,7 @@
  };
  document.addEventListener("visibilitychange",()=>{
    if(document.visibilityState==="visible"&&typeof currentUser!=="undefined"&&currentUser?.role==="supplier"&&typeof authToken!=="undefined"&&authToken)
-     originalFetch("http://localhost:5000/api/auth/me",{headers:{Authorization:"Bearer "+authToken}})
+     originalFetch("/api/auth/me",{headers:{Authorization:"Bearer "+authToken}})
        .then(async r=>{if(r.status===403){const data=await r.json().catch(()=>({}));if(data.code==="SUPPLIER_INACTIVE"||data.message===inactiveMessage)logoutInactive();}})
        .catch(()=>{});
  });

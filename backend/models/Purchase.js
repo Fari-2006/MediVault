@@ -12,6 +12,7 @@ const purchaseSchema = new mongoose.Schema({
   unitCost: { type: Number, required: true, min: 0 },
   totalCost: { type: Number, required: true, min: 0 },
   purchasedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  restockRequest: { type: mongoose.Schema.Types.ObjectId, ref: "RestockRequest", index: true },
   status: { type: String, enum: ["received"], default: "received" }
 }, { timestamps: true });
 

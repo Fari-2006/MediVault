@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -141,7 +140,7 @@
               <div><span>📦</span><strong>Purchase<br>Management</strong></div>
               <div><span>👥</span><strong>Staff<br>Management</strong></div>
             </div>
-            <ul class="public-benefits" id="about"><li>Real-time stock tracking</li><li>Expiry and low-stock alerts</li><li>Role-based access for Admin &amp; Cashier</li></ul>
+            <ul class="public-benefits" id="about"><li>Real-time stock tracking</li><li>Expiry and low-stock alerts</li><li>Role-based access for Admin &amp; Pharmacy Staff</li></ul>
             <div class="public-value-strip" id="why-medivault"><div>🛡️ <span>Secure<br>&amp; Reliable</span></div><div>⚡ <span>Real-time<br>Updates</span></div><div>▥ <span>Better<br>Decisions</span></div><div>♥ <span>Better<br>Healthcare</span></div></div>
           </div>
         </section>
@@ -169,13 +168,16 @@
 
                 <label for="password">Password</label>
 
-                <input
-                    type="password"
-                    id="password"
-                    placeholder="Enter your password"
-                    autocomplete="current-password"
-                    required
-                >
+                <div class="login-password-control">
+                    <input
+                        type="password"
+                        id="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                        required
+                    >
+                    <button type="button" id="togglePasswordVisibility" aria-label="Show password" aria-pressed="false">Show</button>
+                </div>
 
                 <button type="submit" class="primary-btn">
                     Log In
@@ -188,7 +190,7 @@
                 ></p>
 
             </form>
-            <div class="public-login-divider"><span>OR</span></div><button type="button" class="secondary-btn" id="showRegisterBtn">♙ &nbsp; Register as Cashier</button><p class="public-register-note">New to MediVault? Register as a Cashier and wait for Admin approval.</p><div class="public-admin-note" id="contact"><strong>🛡️ &nbsp; For Admins</strong><span>Use your registered admin credentials to access the full system.</span></div>
+            <div class="public-login-divider"><span>OR</span></div><button type="button" class="secondary-btn" id="showRegisterBtn">♙ &nbsp; Register as Pharmacy Staff</button><p class="public-register-note">New to MediVault? Register as Pharmacy Staff and wait for Admin approval.</p><div class="public-admin-note" id="contact"><strong>🛡️ &nbsp; For Admins</strong><span>Use your registered admin credentials to access the full system.</span></div>
 
         </section>
 
@@ -806,7 +808,7 @@
             ============================================ -->
 
             <section id="staffSection" class="panel" hidden>
-                <div class="section-heading"><div><h2>Staff Management</h2><p>Review and manage cashier applications.</p></div>
+                <div class="section-heading"><div><h2>Staff Management</h2><p>Review and manage staff applications.</p></div>
                     <button type="button" id="staffRefreshBtn" class="secondary-btn">Refresh Staff</button></div>
                 <label for="staffStatusFilter">Application status</label>
                 <select id="staffStatusFilter"><option value="">All Staff</option><option value="pending">Pending Applications</option>

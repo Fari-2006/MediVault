@@ -1,7 +1,8 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const helmet = require("helmet");
+const path = require("path");
 require("dotenv").config();
 
 // ============================================
@@ -31,13 +32,17 @@ const {
 } = require("./middleware/authMiddleware");
 
 const app = express();
+const frontendOrigin = process.env.FRONTEND_ORIGIN;
 
 // ============================================
 // MIDDLEWARE
 // ============================================
 
-app.use(cors());
-app.use(express.json());
+app.disable("x-powered-by");
+app.use(helmet());
+app.use(cors(frontendOrigin ? { origin: frontendOrigin } : { origin: false }));
+app.use(express.json({ limit: "1mb" }));
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // ============================================
 // API ROUTES
@@ -52,22 +57,8 @@ app.use("/api/medicines", medicineRoutes);
 // Sales
 app.use("/api/sales", saleRoutes);
 
-// Suppliers
-// All supplier routes require login.
-// Only admins can add, edit or delete suppliers.
-// GET requests are available to authenticated users.
-app.use(
-    "/api/suppliers",
-    protect,
-    (req, res, next) => {
-        if (req.method === "GET") {
-            return next();
-        }
-
-        return authorize("admin")(req, res, next);
-    },
-    supplierRoutes
-);
+// Supplier records are restricted to admins.
+app.use("/api/suppliers", protect, authorize("admin"), supplierRoutes);
 
 // Purchases (admin only)
 app.use("/api/purchases", purchaseRoutes);
@@ -86,10 +77,12 @@ app.use("/api/admin/purchase-orders", adminOrderRoutes);
 // HOME ROUTE
 // ============================================
 
+app.get("/api/health", (req, res) => {
+    res.status(200).json({ message: "MediVault API is running successfully!" });
+});
+
 app.get("/", (req, res) => {
-    res.status(200).json({
-        message: "MediVault API is running successfully!"
-    });
+    res.sendFile(path.join(__dirname, "../frontend/index.html"));
 });
 
 // ============================================
@@ -124,9 +117,14 @@ app.get(
 // ============================================
 
 app.use((req, res) => {
-    res.status(404).json({
-        message: "API route not found"
-    });
+    res.status(404).json({ message: "API route not found" });
+});
+
+app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500 ? error.status : 500;
+    if (status === 500) console.error("Request failed:", error.message);
+    res.status(status).json({ message: status === 500 ? "An unexpected server error occurred." : error.message });
 });
 
 // ============================================
@@ -136,6 +134,17 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 
 async function startServer() {
+    const missing = ["MONGO_URI", "JWT_SECRET"].filter(name => !process.env[name]);
+    if (missing.length) {
+        console.error(`Missing required environment variables: ${missing.join(", ")}`);
+        process.exit(1);
+    }
+
+    if (process.env.JWT_SECRET.length < 32) {
+        console.error("JWT_SECRET must be at least 32 characters long.");
+        process.exit(1);
+    }
+
     try {
         await mongoose.connect(process.env.MONGO_URI);
 

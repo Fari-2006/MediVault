@@ -1,4 +1,3 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 const Medicine = require("../models/Medicine");
@@ -125,13 +124,13 @@ router.post(
             if (error.name === "ValidationError" || error.name === "CastError") {
                 return res.status(400).json({
                     message: "Invalid medicine details.",
-                    error: error.message
+
                 });
             }
 
             return res.status(500).json({
                 message: "Failed to add medicine.",
-                error: error.message
+
             });
         }
     }
@@ -147,6 +146,7 @@ router.post(
 router.get(
     "/",
     protect,
+    authorize("admin", "cashier"),
     async (req, res) => {
         try {
             const {
@@ -204,7 +204,7 @@ router.get(
         } catch (error) {
             return res.status(500).json({
                 message: "Failed to retrieve medicines.",
-                error: error.message
+
             });
         }
     }
@@ -218,6 +218,7 @@ router.get(
 router.get(
     "/alerts/low-stock",
     protect,
+    authorize("admin", "cashier"),
     async (req, res) => {
         try {
             const medicines = await Medicine.find({
@@ -235,7 +236,7 @@ router.get(
         } catch (error) {
             return res.status(500).json({
                 message: "Failed to retrieve low stock medicines.",
-                error: error.message
+
             });
         }
     }
@@ -250,6 +251,7 @@ router.get(
 router.get(
     "/alerts/near-expiry",
     protect,
+    authorize("admin", "cashier"),
     async (req, res) => {
         try {
             const days = Number(req.query.days ?? 90);
@@ -287,7 +289,7 @@ router.get(
         } catch (error) {
             return res.status(500).json({
                 message: "Failed to retrieve near-expiry medicines.",
-                error: error.message
+
             });
         }
     }
@@ -301,6 +303,7 @@ router.get(
 router.get(
     "/:id",
     protect,
+    authorize("admin", "cashier"),
     async (req, res) => {
         try {
             const { id } = req.params;
@@ -311,7 +314,8 @@ router.get(
                 });
             }
 
-            const medicine = await Medicine.findById(id);
+            const medicine = await Medicine.findById(id)
+                .select(req.user.role === "admin" ? "" : "-purchasePrice");
 
             if (!medicine) {
                 return res.status(404).json({
@@ -325,7 +329,7 @@ router.get(
         } catch (error) {
             return res.status(500).json({
                 message: "Failed to retrieve medicine.",
-                error: error.message
+
             });
         }
     }
@@ -469,13 +473,13 @@ router.put(
             if (error.name === "ValidationError" || error.name === "CastError") {
                 return res.status(400).json({
                     message: "Invalid medicine details.",
-                    error: error.message
+
                 });
             }
 
             return res.status(500).json({
                 message: "Failed to update medicine.",
-                error: error.message
+
             });
         }
     }
@@ -501,7 +505,11 @@ router.delete(
                 });
             }
 
-            const medicine = await Medicine.findByIdAndDelete(id);
+            const medicine = await Medicine.findByIdAndUpdate(
+                id,
+                { $set: { status: "inactive" } },
+                { new: true, runValidators: true }
+            );
 
             if (!medicine) {
                 return res.status(404).json({
@@ -510,13 +518,13 @@ router.delete(
             }
 
             return res.status(200).json({
-                message: "Medicine deleted successfully",
+                message: "Medicine deactivated. Historical records have been retained.",
                 medicine
             });
         } catch (error) {
             return res.status(500).json({
                 message: "Failed to delete medicine.",
-                error: error.message
+
             });
         }
     }

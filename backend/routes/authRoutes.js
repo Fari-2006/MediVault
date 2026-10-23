@@ -72,7 +72,7 @@ router.post("/login", loginRateLimit, async (req, res) => {
     if (user.role !== "admin" && user.approvalStatus === "pending") return res.status(403).json({ message: "Your registration is awaiting Admin approval." });
     if (user.approvalStatus === "rejected") return res.status(403).json({ message: "Your registration was rejected." });
     if (!user.isActive) return res.status(403).json({ message: "Your account is inactive. Contact the Admin." });
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "8h" });
+    const token = jwt.sign({ id: user._id, tokenVersion: user.tokenVersion || 0 }, process.env.JWT_SECRET, { expiresIn: "8h" });
     res.json({ message: "Login successful", token, user: publicUser(user) });
   } catch (error) {
     console.error("Login error:", error);
@@ -89,6 +89,7 @@ router.post("/change-password", protect, async (req, res) => {
   if (currentPassword === newPassword) return res.status(400).json({ message: "Choose a different password." });
   user.password = await bcrypt.hash(newPassword, 12);
   user.mustChangePassword = false;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await user.save();
   res.json({ message: "Password changed successfully. Log in again." });
 });

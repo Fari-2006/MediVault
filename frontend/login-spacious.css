@@ -130,3 +130,13 @@ body:not(.is-authenticated) .login-panel .message.success { background: #f0fdf4;
   body:not(.is-authenticated) .login-panel { padding: 25px 20px; }
   body:not(.is-authenticated) #loginSection .section-heading h2 { font-size: 26px; }
 }
+body:not(.is-authenticated) .login-password-control { position: relative; display: flex; align-items: center; }
+body:not(.is-authenticated) .login-password-control input { width: 100%; padding-right: 76px; }
+body:not(.is-authenticated) .login-password-control button {
+  position: absolute; right: 12px; min-width: 48px; min-height: 40px;
+  border: 0; border-radius: 6px; background: transparent; color: #0f766e;
+  font-weight: 700; cursor: pointer;
+}
+body:not(.is-authenticated) .login-password-control button:focus-visible {
+  outline: 3px solid rgba(13, 148, 136, .3); outline-offset: 1px;
+}

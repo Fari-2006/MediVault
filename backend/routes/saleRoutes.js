@@ -1,9 +1,9 @@
-
 const express = require("express");
 const mongoose = require("mongoose");
 
 const Sale = require("../models/Sale");
 const Medicine = require("../models/Medicine");
+const allocateFefo = require("../fefoAllocation");
 const { protect, authorize } = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -73,14 +73,11 @@ router.post(
                 const requested = await Medicine.find({ _id: { $in: requestedIds } }).session(session);
                 if (requested.length !== requestedIds.length) throw new Error("MEDICINE_NOT_FOUND");
                 const saleItems = [];
-                let subtotal = 0;
-                let totalGST = 0;
+                let subtotalCents = 0;
+                let totalGSTCents = 0;
                 const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const allocated = new Map();
-
-                // Group requested batch IDs by medicine name. Checkout always allocates
-                // available batches in earliest-expiry order, not selected-batch order.
+                today.setUTCHours(0, 0, 0, 0);
+                // Group requested batch IDs by medicine name so checkout always allocates FEFO.
                 const groups = new Map();
                 for (const selected of requested) {
                     const key = selected.medicineName.trim().toLowerCase();
@@ -91,42 +88,42 @@ router.post(
                     const candidates = await Medicine.find({
                         medicineName: example.medicineName,
                         status: "active",
-                        quantity: { $gt: 0 },
-                        expiryDate: { $gte: today }
+                        quantity: { $gt: 0 }
                     }).sort({ expiryDate: 1, _id: 1 }).session(session);
-                    const available = candidates.reduce((sum, m) => sum + m.quantity, 0);
-                    if (available < requestedQty)
-                        throw new Error("INSUFFICIENT_STOCK:" + example.medicineName + ": available " + available);
-                    let remaining = requestedQty;
-                    for (const medicine of candidates) {
-                        if (remaining <= 0) break;
-                        const quantity = Math.min(remaining, medicine.quantity);
-                        remaining -= quantity;
-                        allocated.set(String(medicine._id), quantity);
-                        const unitPrice = medicine.sellingPrice;
+                    const allocation = allocateFefo(candidates, requestedQty, today);
+                    if (!allocation.allocations)
+                        throw new Error("INSUFFICIENT_STOCK:" + example.medicineName + ": available " + allocation.available);
+                    for (const { batch: medicine, quantity } of allocation.allocations) {
+                        const unitPriceCents = Math.round(medicine.sellingPrice * 100);
+                        const unitPrice = unitPriceCents / 100;
                         const gstPercentage = medicine.gstPercentage || 0;
-                        const itemSubtotal = Number((unitPrice * quantity).toFixed(2));
-                        const gstAmount = Number((itemSubtotal * gstPercentage / 100).toFixed(2));
+                        const itemSubtotalCents = unitPriceCents * quantity;
+                        const gstAmountCents = Math.round(itemSubtotalCents * gstPercentage / 100);
+                        if (!Number.isSafeInteger(itemSubtotalCents) || !Number.isSafeInteger(gstAmountCents))
+                            throw new Error("AMOUNT_TOO_LARGE");
+                        const itemSubtotal = itemSubtotalCents / 100;
+                        const gstAmount = gstAmountCents / 100;
                         saleItems.push({
                             medicine: medicine._id,
                             medicineName: medicine.medicineName,
                             batchNumber: medicine.batchNumber,
                             expiryDate: medicine.expiryDate,
-                            quantity, unitPrice, gstPercentage,
+                            quantity, unitPrice, unitCost: medicine.purchasePrice, gstPercentage,
                             subtotal: itemSubtotal, gstAmount,
-                            total: Number((itemSubtotal + gstAmount).toFixed(2))
+                            total: (itemSubtotalCents + gstAmountCents) / 100
                         });
-                        subtotal += itemSubtotal;
-                        totalGST += gstAmount;
+                        subtotalCents += itemSubtotalCents;
+                        totalGSTCents += gstAmountCents;
                     }
                 }
 
-                subtotal = Number(subtotal.toFixed(2));
-                totalGST = Number(totalGST.toFixed(2));
-
-                const grandTotal = Number(
-                    (subtotal + totalGST).toFixed(2)
-                );
+                if (!Number.isSafeInteger(subtotalCents) || !Number.isSafeInteger(totalGSTCents))
+                    throw new Error("AMOUNT_TOO_LARGE");
+                const subtotal = subtotalCents / 100;
+                const totalGST = totalGSTCents / 100;
+                const grandTotalCents = subtotalCents + totalGSTCents;
+                if (!Number.isSafeInteger(grandTotalCents)) throw new Error("AMOUNT_TOO_LARGE");
+                const grandTotal = grandTotalCents / 100;
 
                 // Generate invoice number.
                 invoiceNumber =
@@ -166,7 +163,7 @@ router.post(
                                 {
                                     expiryDate: {
                                         $gte: new Date(
-                                            new Date().setHours(0, 0, 0, 0)
+                                            new Date().setUTCHours(0, 0, 0, 0)
                                         )
                                     }
                                 }
@@ -195,6 +192,10 @@ router.post(
                 sale: saleData
             });
         } catch (error) {
+            if (error.message === "AMOUNT_TOO_LARGE") {
+                return res.status(400).json({ message: "Sale amount is too large." });
+            }
+
             if (error.message === "MEDICINE_NOT_FOUND") {
                 return res.status(404).json({
                     message:

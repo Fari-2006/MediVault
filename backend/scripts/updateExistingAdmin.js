@@ -50,7 +50,8 @@ async function main() {
       { _id: admin._id, email: oldEmail, password: admin.password, role: "admin" },
       { $set: {
         email: newEmail, password: newHash, role: "admin",
-        approvalStatus: "approved", isActive: true, mustChangePassword: true
+        approvalStatus: "approved", isActive: true, mustChangePassword: true,
+        tokenVersion: (admin.tokenVersion || 0) + 1
       }},
       { returnDocument: "after", runValidators: true }
     );

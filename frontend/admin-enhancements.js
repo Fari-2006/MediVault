@@ -16,7 +16,7 @@
        email: $("registerEmail").value, phone: $("registerPhone").value,
        address: $("registerAddress").value, password: $("registerPassword").value,
        confirmPassword: $("registerConfirm").value };
-     const response = await fetch("http://localhost:5000/api/auth/register", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+     const response = await fetch("/api/auth/register", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
      const data = await response.json();
      if (!response.ok) throw new Error(data.message || "Registration failed");
      $("registerMessage").textContent = data.message;
@@ -29,7 +29,7 @@
  const current = () => typeof currentUser !== "undefined" ? currentUser : null;
  const token = () => typeof authToken !== "undefined" ? authToken : "";
  const get = async path => {
-   const response = await fetch("http://localhost:5000/api" + path, { headers: { Authorization: "Bearer " + token() } });
+   const response = await fetch("/api" + path, { headers: { Authorization: "Bearer " + token() } });
    const data = await response.json();
    if (!response.ok) throw new Error(data.message || "Request failed");
    return data;
@@ -48,7 +48,7 @@
          if (item.approvalStatus === "pending") for (const action of ["approve","reject"]) {
            const b = node("button",action === "approve" ? "Approve" : "Reject"); b.className="secondary-btn";
            b.addEventListener("click", async () => { b.disabled=true; try {
-             const response = await fetch("http://localhost:5000/api/supplier-accounts/applications/"+item.id,{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token()},body:JSON.stringify({action})});
+             const response = await fetch("/api/supplier-accounts/applications/"+item.id,{method:"PATCH",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token()},body:JSON.stringify({action})});
              const result=await response.json(); if(!response.ok) throw Error(result.message); await load(page);
            } catch(error){$("supplierApplicationsMessage").textContent=error.message;b.disabled=false;} }); r.append(b);
          }

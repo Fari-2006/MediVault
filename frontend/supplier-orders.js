@@ -1,7 +1,7 @@
 "use strict";
 (()=>{
  const $=id=>document.getElementById(id),node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
- const api=async(path,options={})=>{const response=await fetch("http://localhost:5000/api"+path,{...options,headers:{Authorization:"Bearer "+authToken,...(options.body?{"Content-Type":"application/json"}:{})}});const data=await response.json();if(!response.ok)throw Error(data.message||"Request failed");return data;};
+ const api=async(path,options={})=>{const response=await fetch("/api"+path,{...options,headers:{Authorization:"Bearer "+authToken,...(options.body?{"Content-Type":"application/json"}:{})}});const data=await response.json();if(!response.ok)throw Error(data.message||"Request failed");return data;};
  const panel=$("supplierPortalPanel");if(!panel)return;
  const shell=node("div");shell.className="supplier-workspace";
  const header=node("div");header.className="supplier-welcome";shell.append(header);

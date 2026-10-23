@@ -1,4 +1,3 @@
-
 "use strict";
 
 const express = require("express");
@@ -198,9 +197,7 @@ router.delete("/:id", async (req, res) => {
             });
         }
 
-        const supplier = await Supplier.findByIdAndDelete(
-            req.params.id
-        );
+        const supplier = await Supplier.findById(req.params.id);
 
         if (!supplier) {
             return res.status(404).json({
@@ -208,8 +205,17 @@ router.delete("/:id", async (req, res) => {
             });
         }
 
+        supplier.status = "inactive";
+        await supplier.save();
+        if (supplier.linkedUser) {
+            await User.updateOne(
+                { _id: supplier.linkedUser, role: "supplier" },
+                { $set: { isActive: false } }
+            );
+        }
+
         res.status(200).json({
-            message: "Supplier deleted successfully."
+            message: "Supplier deactivated. Historical records have been retained."
         });
 
     } catch (error) {
