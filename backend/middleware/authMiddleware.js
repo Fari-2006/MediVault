@@ -44,6 +44,12 @@ const protect = async (req, res, next) => {
         if (user.mustChangePassword && req.originalUrl !== "/api/auth/change-password") {
             return res.status(403).json({ message: "Change your initial password before using the application.", code: "PASSWORD_CHANGE_REQUIRED" });
         }
+        if (user.role === "supplier") {
+            const Supplier = require("../models/Supplier");
+            const supplier = await Supplier.findOne({ linkedUser: user._id }).select("status").lean();
+            if (!supplier || supplier.status !== "active")
+                return res.status(403).json({ message: "Your account is not active. Please contact the admin", code: "SUPPLIER_INACTIVE" });
+        }
         req.user = { id: String(user._id), role: user.role };
 
         // Continue to next function
