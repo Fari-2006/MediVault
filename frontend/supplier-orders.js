@@ -56,15 +56,49 @@
   [...tabs.children].forEach(b=>b.classList.toggle("active",b.textContent===view));
   try{
    if(view==="Dashboard"){
-    const data=await api("/supplier/dashboard");
+    const [data,notifications]=await Promise.all([api("/supplier/dashboard"),api("/supplier/notifications")]);
     const stats=node("div");stats.className="supplier-stats";
-    for(const [label,value] of [["Total Orders",data.summary.total],["Pending Orders",data.summary.pending],["In Transit",data.summary.inTransit],["Delivered",data.summary.delivered]]){const c=node("article");c.append(node("span",label),node("h3",value));stats.append(c);}content.append(stats);
-    const heading=node("h3","Recent Purchase Orders");content.append(heading);
-    if(!data.recent.length)content.append(node("p","No purchase orders yet"));
-    data.recent.forEach(o=>content.append(orderCard(o)));
-    action(content,"View all",()=>show("Purchase Orders"));
-    const quick=node("h3","Quick Actions");content.append(quick);
-    for(const name of ["Purchase Orders","Delivery Tracking","Company Profile"])action(content,name,()=>show(name));
+    for(const [label,value,sub] of [
+      ["Total Orders",data.summary.total,"All purchase orders"],
+      ["Pending Orders",data.summary.pending,"Waiting for your action"],
+      ["In Transit",data.summary.inTransit,"Dispatched, not yet delivered"],
+      ["Delivered",data.summary.delivered,"Marked as delivered"]
+    ]){const c=node("article");c.className="supplier-kpi";c.append(node("span",label),node("h3",value),node("small",sub));stats.append(c);}
+    content.append(stats);
+    const layout=node("div");layout.className="supplier-dashboard-layout";content.append(layout);
+    const recent=node("section");recent.className="supplier-dashboard-card supplier-recent";layout.append(recent);
+    const recentHead=node("div");recentHead.className="supplier-section-head";
+    const heading=node("div");heading.append(node("h3","Recent Purchase Orders"),node("p","Latest 5 orders assigned to you"));recentHead.append(heading);
+    const viewAll=node("button","View all");viewAll.className="secondary-btn";viewAll.addEventListener("click",()=>show("Purchase Orders"));recentHead.append(viewAll);recent.append(recentHead);
+    if(!data.recent.length)recent.append(node("p","No purchase orders yet"));
+    else{
+      const table=node("table");table.className="supplier-recent-table";
+      const thead=node("thead"),tr=node("tr");
+      for(const h of ["PO NUMBER","ITEMS","EXPECTED","STATUS"])tr.append(node("th",h));
+      thead.append(tr);table.append(thead);
+      const tbody=node("tbody");
+      for(const o of data.recent){
+        const row=node("tr");
+        row.append(node("td",o.purchaseOrderNumber||String(o._id).slice(-8).toUpperCase()));
+        row.append(node("td",String(o.items?.length||1)+" medicine"+((o.items?.length||1)===1?"":"s")));
+        row.append(node("td",fmt(o.expectedDeliveryDate||o.estimatedDeliveryDate)));
+        const td=node("td"),badge=node("span",o.status);badge.className="supplier-status-badge status-"+o.status.toLowerCase().replace(/[^a-z]+/g,"-");td.append(badge);row.append(td);tbody.append(row);
+      }
+      table.append(tbody);const wrap=node("div");wrap.className="supplier-table-wrap";wrap.append(table);recent.append(wrap);
+    }
+    const right=node("div");right.className="supplier-dashboard-right";layout.append(right);
+    const quick=node("section");quick.className="supplier-dashboard-card";quick.append(node("h3","Quick Actions"));
+    const quickGrid=node("div");quickGrid.className="supplier-quick-grid";
+    for(const [label,subtitle,target] of [["Purchase Orders","View and accept","Purchase Orders"],["Delivery Tracking","Update dispatch","Delivery Tracking"],["Order History","Past orders","Order History"],["Company Profile","Contact details","Company Profile"]]){
+      const b=node("button");b.type="button";b.append(node("strong",label),node("small",subtitle));b.addEventListener("click",()=>show(target));quickGrid.append(b);
+    }
+    quick.append(quickGrid);right.append(quick);
+    const noticeCard=node("section");noticeCard.className="supplier-dashboard-card";const noticeHead=node("div");noticeHead.className="supplier-section-head";noticeHead.append(node("h3","Notifications"));
+    const unread=notifications.notifications.filter(n=>!n.read);if(unread.length){const count=node("span",unread.length);count.className="supplier-notification-count";noticeHead.append(count);}
+    noticeCard.append(noticeHead);
+    if(!notifications.notifications.length)noticeCard.append(node("p","No notifications yet"));
+    else for(const n of notifications.notifications.slice(0,3)){const b=node("button");b.type="button";b.className="supplier-notice-row";b.append(node("strong",n.message),node("small",fmt(n.createdAt)));b.addEventListener("click",()=>show("Notifications"));noticeCard.append(b);}
+    right.append(noticeCard);
    }else if(["Purchase Orders","Delivery Tracking","Order History"].includes(view)){
     const data=await api("/supplier/orders");
     const filtered=data.orders.filter(o=>view==="Delivery Tracking"?["Accepted","Dispatched","Delivered"].includes(o.status):view==="Order History"?["Delivered","Received","Partially Received","Rejected"].includes(o.status):true);
