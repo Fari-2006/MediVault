@@ -63,6 +63,12 @@ router.post("/login", loginRateLimit, async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password." });
     }
     clearLoginFailures(req);
+    if (user.role === "supplier") {
+      const Supplier = require("../models/Supplier");
+      const profile = await Supplier.findOne({ linkedUser: user._id }).select("status").lean();
+      if (!profile || profile.status !== "active" || !user.isActive)
+        return res.status(403).json({ message: "Your account is not active. Please contact the admin" });
+    }
     if (user.role !== "admin" && user.approvalStatus === "pending") return res.status(403).json({ message: "Your registration is awaiting Admin approval." });
     if (user.approvalStatus === "rejected") return res.status(403).json({ message: "Your registration was rejected." });
     if (!user.isActive) return res.status(403).json({ message: "Your account is inactive. Contact the Admin." });
