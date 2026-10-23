@@ -1,11 +1,10 @@
-
 "use strict";
 
 // ============================================
 // MEDIVAULT FRONTEND CONFIGURATION
 // ============================================
 
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "/api";
 
 let authToken = "";
 let currentUser = null;
@@ -355,6 +354,16 @@ document.querySelectorAll(".nav-link").forEach(link => {
 // LOGIN
 // ============================================
 
+const passwordVisibilityButton = $("togglePasswordVisibility");
+passwordVisibilityButton?.addEventListener("click", () => {
+    const passwordInput = $("password");
+    const isVisible = passwordInput.type === "text";
+    passwordInput.type = isVisible ? "password" : "text";
+    passwordVisibilityButton.textContent = isVisible ? "Show" : "Hide";
+    passwordVisibilityButton.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+    passwordVisibilityButton.setAttribute("aria-pressed", String(!isVisible));
+});
+
 if (loginForm) {
     loginForm.addEventListener("submit", async event => {
         event.preventDefault();
@@ -367,6 +376,9 @@ if (loginForm) {
         );
 
         submitButton.disabled = true;
+        submitButton.setAttribute("aria-busy", "true");
+        submitButton.dataset.idleLabel = submitButton.textContent;
+        submitButton.textContent = "Signing in…";
         setMessage(loginMessage, "Logging in...");
 
         try {
@@ -388,7 +400,7 @@ if (loginForm) {
                 currentUser.name || currentUser.email;
 
             userRole.textContent =
-                currentUser.role || "user";
+                currentUser.role === "cashier" ? "Pharmacy Staff" : currentUser.role || "user";
 
             loginSection.hidden = true;
             if (data.user.mustChangePassword) {
@@ -431,6 +443,8 @@ if (loginForm) {
             );
         } finally {
             submitButton.disabled = false;
+            submitButton.removeAttribute("aria-busy");
+            submitButton.textContent = submitButton.dataset.idleLabel || "Log In";
         }
     });
 }
@@ -1194,14 +1208,14 @@ medicineTableBody?.addEventListener(
         if (action === "delete") {
             if (currentUser?.role !== "admin") {
                 showToast(
-                    "Only admins can delete medicines.",
+                    "Only admins can deactivate medicines.",
                     true
                 );
                 return;
             }
 
             if (!window.confirm(
-                `Delete ${medicine.medicineName}, batch ${
+                `Deactivate ${medicine.medicineName}, batch ${
                     medicine.batchNumber
                 }?`
             )) {
@@ -1218,7 +1232,7 @@ medicineTableBody?.addEventListener(
 
                 showToast(
                     data.message ||
-                    "Medicine deleted successfully."
+                    "Medicine deactivated successfully."
                 );
 
             } catch (error) {
@@ -2442,7 +2456,7 @@ supplierTableBody?.addEventListener(
 
         if (action === "delete") {
             const confirmed = window.confirm(
-                `Delete supplier "${supplier.supplierName}"?`
+                `Deactivate supplier "${supplier.supplierName}"?`
             );
 
             if (!confirmed) return;
@@ -2461,7 +2475,7 @@ supplierTableBody?.addEventListener(
 
                 showToast(
                     data.message ||
-                    "Supplier deleted successfully."
+                    "Supplier deactivated successfully."
                 );
 
             } catch (error) {

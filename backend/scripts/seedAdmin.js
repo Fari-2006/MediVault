@@ -6,12 +6,14 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 (async () => {
-  if (!process.env.MONGO_URI || !process.env.INITIAL_ADMIN_PASSWORD || !process.env.JWT_SECRET)
-    throw new Error("Set MONGO_URI, JWT_SECRET and INITIAL_ADMIN_PASSWORD in your local .env.");
-  if (process.env.INITIAL_ADMIN_PASSWORD.length < 10)
-    throw new Error("Initial password must be at least 10 characters.");
+  const email = String(process.env.INITIAL_ADMIN_EMAIL || "").trim().toLowerCase();
+  if (!process.env.MONGO_URI || !process.env.INITIAL_ADMIN_PASSWORD || !process.env.JWT_SECRET || !email)
+    throw new Error("Set MONGO_URI, JWT_SECRET, INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD in your local .env.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    throw new Error("INITIAL_ADMIN_EMAIL must be a valid email address.");
+  if (process.env.INITIAL_ADMIN_PASSWORD.length < 10 || process.env.INITIAL_ADMIN_PASSWORD.length > 128)
+    throw new Error("Initial password must be between 10 and 128 characters.");
   await mongoose.connect(process.env.MONGO_URI);
-  const email = "mediadmin@gmail.com";
   const existing = await User.findOne({ email });
   if (existing) {
     console.log("Admin email already exists. No changes made; refusing to overwrite credentials.");

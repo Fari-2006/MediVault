@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const saleItemSchema = new mongoose.Schema(
@@ -27,6 +26,7 @@ const saleItemSchema = new mongoose.Schema(
             required: true,
             min: 0
         },
+        unitCost: { type: Number, min: 0 },
 
         gstPercentage: {
             type: Number,

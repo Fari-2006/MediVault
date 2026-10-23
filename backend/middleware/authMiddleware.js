@@ -34,8 +34,11 @@ const protect = async (req, res, next) => {
         );
 
         // Never trust role/approval claims stored in an old JWT.
-        const user = await User.findById(decoded.id).select("role approvalStatus isActive mustChangePassword");
-        if (!user || !user.isActive || user.approvalStatus === "rejected") {
+        const user = await User.findById(decoded.id).select("role approvalStatus isActive mustChangePassword tokenVersion");
+        if (!user || decoded.tokenVersion !== (user.tokenVersion || 0)) {
+            return res.status(401).json({ message: "Invalid or expired token." });
+        }
+        if (!user.isActive || user.approvalStatus === "rejected") {
             return res.status(403).json({ message: "This account is inactive or rejected." });
         }
         if (user.role !== "admin" && user.approvalStatus !== "approved") {

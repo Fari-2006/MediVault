@@ -25,9 +25,30 @@ router.post("/orders/:id/receive",async(req,res)=>{
   if(!target){[target]=await Medicine.create([{...medicine.toObject(),_id:new mongoose.Types.ObjectId(),batchNumber:batchNumber.trim(),expiryDate:new Date(expiryDate),quantity:0,createdAt:undefined,updatedAt:undefined}],{session});}
   const updated=await Medicine.updateOne({_id:target._id,status:"active"},{$inc:{quantity}},{session});
   if(updated.modifiedCount!==1)throw Error("STOCK_FAILED");
-  order.receivedQuantity=(order.receivedQuantity||0)+quantity;
+  const previousReceived=order.receivedQuantity||0;
+  const receivedQuantity=previousReceived+quantity;
+  const unitCostCents=Math.round(target.purchasePrice*100);
+  const totalCostCents=quantity*unitCostCents;
+  if(!order.supplier)throw Error("SUPPLIER_INVALID");
+  if(!Number.isSafeInteger(totalCostCents))throw Error("AMOUNT_TOO_LARGE");
+  const unitCost=unitCostCents/100;
+  const totalCost=totalCostCents/100;
+  await Purchase.create([{
+   purchaseNumber:(order.purchaseOrderNumber||"PO-"+order._id.toString())+"-R"+receivedQuantity,
+   supplier:order.supplier,
+   medicine:target._id,
+   medicineName:target.medicineName,
+   batchNumber:target.batchNumber,
+   expiryDate:target.expiryDate,
+   quantity,
+   unitCost,
+   totalCost,
+   purchasedBy:req.user.id,
+   restockRequest:order._id
+  }],{session});
+  order.receivedQuantity=receivedQuantity;
   order.receivedBatchNumber=batchNumber.trim();order.receivedExpiryDate=new Date(expiryDate);order.receivedAt=new Date();
-  order.status=order.receivedQuantity===order.quantityRequested?"Received":"Partially Received";
+  order.status=receivedQuantity===order.quantityRequested?"Received":"Partially Received";
   if(order.status==="Received")order.active=false;
   order.history.push({status:order.status,action:"verified receipt: "+quantity+" units",actor:req.user.id});
   await order.save({session});
@@ -35,6 +56,6 @@ router.post("/orders/:id/receive",async(req,res)=>{
   result=order;
  });
  res.json({message:"Stock received and inventory updated.",order:result});
- }catch(e){const known={INVALID_ORDER:[409,"Order is not awaiting receipt."],OVER_RECEIPT:[400,"Quantity exceeds remaining ordered quantity."],MEDICINE_NOT_FOUND:[404,"Medicine not found or inactive."],EXPIRY_MISMATCH:[409,"Existing batch expiry does not match."],STOCK_FAILED:[409,"Stock update failed."]};const k=known[e.message];if(k)return res.status(k[0]).json({message:k[1]});console.error("Receive order:",e);res.status(500).json({message:"Unable to receive stock. MongoDB replica set required."});}finally{await session.endSession();}
+ }catch(e){const known={INVALID_ORDER:[409,"Order is not awaiting receipt."],OVER_RECEIPT:[400,"Quantity exceeds remaining ordered quantity."],MEDICINE_NOT_FOUND:[404,"Medicine not found or inactive."],EXPIRY_MISMATCH:[409,"Existing batch expiry does not match."],STOCK_FAILED:[409,"Stock update failed."],AMOUNT_TOO_LARGE:[400,"Purchase amount is too large."],SUPPLIER_INVALID:[409,"Order has no valid supplier record."]};const k=known[e.message];if(k)return res.status(k[0]).json({message:k[1]});console.error("Receive order:",e);res.status(500).json({message:"Unable to receive stock. MongoDB replica set required."});}finally{await session.endSession();}
 });
 module.exports=router;

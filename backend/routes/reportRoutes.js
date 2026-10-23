@@ -30,15 +30,11 @@ router.get("/", async (req, res) => {
     const salesSubtotal = money(sales.reduce((sum, sale) => sum + Number(sale.subtotal || 0), 0));
     const salesGST = money(sales.reduce((sum, sale) => sum + Number(sale.totalGST || 0), 0));
     const purchaseExpenses = money(purchases.reduce((sum, p) => sum + Number(p.totalCost || 0), 0));
-    const ids = [...new Set(sales.flatMap(s => s.items || []).map(i => String(i.medicine)).filter(Boolean))];
-    const medicines = await Medicine.find({ _id: { $in: ids } }, "_id purchasePrice").lean();
-    const costs = new Map(medicines.map(m => [String(m._id), Number(m.purchasePrice || 0)]));
     let estimatedCOGS = 0;
     let missingCostItems = 0;
     const top = new Map();
     for (const sale of sales) for (const item of sale.items || []) {
-      const key = String(item.medicine);
-      if (costs.has(key)) estimatedCOGS += costs.get(key) * item.quantity;
+      if (Number.isFinite(item.unitCost)) estimatedCOGS += item.unitCost * item.quantity;
       else missingCostItems++;
       const name = item.medicineName || "Unknown medicine";
       const prev = top.get(name) || { medicineName: name, quantity: 0, revenue: 0 };
@@ -63,7 +59,7 @@ router.get("/", async (req, res) => {
       summary: {
         revenue, salesSubtotal, salesGST, purchaseExpenses,
         estimatedCOGS: money(estimatedCOGS),
-        estimatedGrossProfit: money(salesSubtotal - estimatedCOGS),
+        estimatedGrossProfit: missingCostItems ? null : money(salesSubtotal - estimatedCOGS),
         missingCostItems, salesCount: sales.length, purchasesCount: purchases.length
       },
       daily: [...daily.values()].sort((a, b) => a.date.localeCompare(b.date)).map(row => ({

@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema(
         address: { type: String, trim: true, default: "" },
         profilePhoto: { type: String, default: "" },
         mustChangePassword: { type: Boolean, default: false },
+        tokenVersion: { type: Number, default: 0, min: 0 },
         joiningDate: { type: Date },
         jobTitle: { type: String, default: "Cashier" },
         employmentStatus: { type: String, enum: ["active", "inactive"], default: "active" },
