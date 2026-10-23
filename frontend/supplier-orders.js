@@ -8,6 +8,7 @@
  const tabs=node("nav");tabs.className="supplier-tabs";shell.append(tabs);
  const content=node("div");shell.append(content);
  panel.prepend(shell);
+ const legacyTitle=panel.querySelector(":scope > h2");if(legacyTitle)legacyTitle.hidden=true;
  const menu=["Dashboard","Purchase Orders","Delivery Tracking","Order History","Notifications","Company Profile","Help & Support","Logout"];
  let view="Dashboard";
  const show=async name=>{if(name==="Logout"){document.getElementById("logoutBtn")?.click();return;}view=name;syncSidebar();await render();};
@@ -23,6 +24,7 @@
  const syncSidebar=()=>{
   const supplier=typeof currentUser!=="undefined"&&currentUser?.role==="supplier"&&typeof authToken!=="undefined"&&!!authToken;
   document.querySelectorAll(".supplier-only-nav").forEach(link=>{link.hidden=!supplier;link.classList.toggle("active",supplier&&link.textContent===view);});
+  const brand=document.querySelector(".sidebar .brand p");if(brand)brand.textContent=supplier?"SUPPLIER PORTAL":"PHARMACY MANAGEMENT SYSTEM";
   if(supplier)document.querySelectorAll('.navigation [data-page="supplier-portal"]').forEach(link=>link.hidden=true);
  };
 
@@ -114,7 +116,7 @@
    }else{content.append(node("h3","Help & Support"));content.append(node("p","Contact your pharmacy administrator for assistance with orders or account access."));}
   }catch(e){content.append(node("p",e.message));}
  }
- const observer=new MutationObserver(()=>{if(!panel.hidden)render();});observer.observe(panel,{attributes:true,attributeFilter:["hidden"]});
+ const observer=new MutationObserver(()=>{if(!panel.hidden){view="Dashboard";render();}});observer.observe(panel,{attributes:true,attributeFilter:["hidden"]});
  const purchase=$("purchasesSection");if(purchase){
   const area=node("section");area.className="supplier-admin-orders";area.append(node("h3","Supplier Purchase Orders"));const list=node("div");area.append(list);purchase.append(area);
   async function loadAdmin(){
