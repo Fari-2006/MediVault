@@ -202,3 +202,59 @@ body.is-authenticated .main-content > .footer { font-size: 13px; }
   body.is-authenticated .app-header-search { min-width:0; }
   body.is-authenticated .dashboard-main-grid > .panel { padding:16px; }
 }
+
+/* Dashboard without the Sales Revenue card: balanced two-column rows. */
+body.is-authenticated #dashboardMainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 18px;
+  align-items: stretch;
+}
+body.is-authenticated #dashboardMainGrid[hidden] { display: none !important; }
+body.is-authenticated #dashboardMainGrid > .dashboard-category-card {
+  grid-column: 1;
+  grid-row: 1;
+}
+body.is-authenticated #dashboardMainGrid > .dashboard-quick-card {
+  grid-column: 2;
+  grid-row: 1;
+}
+body.is-authenticated #dashboardMainGrid > .dashboard-top-card {
+  grid-column: 1;
+  grid-row: 2;
+}
+body.is-authenticated #dashboardMainGrid > .dashboard-recent-card {
+  grid-column: 2;
+  grid-row: 2;
+}
+body.is-authenticated #dashboardMainGrid > .panel {
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  align-self: stretch;
+}
+@media (min-width: 1024px) {
+  body.is-authenticated #dashboardMainGrid {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+  /* Row 3 uses 40/60 proportions independently of row 2. */
+  body.is-authenticated #dashboardMainGrid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+  body.is-authenticated #dashboardMainGrid > .dashboard-category-card { grid-column: 1 / span 6; }
+  body.is-authenticated #dashboardMainGrid > .dashboard-quick-card { grid-column: 7 / span 4; }
+  body.is-authenticated #dashboardMainGrid > .dashboard-top-card { grid-column: 1 / span 4; }
+  body.is-authenticated #dashboardMainGrid > .dashboard-recent-card { grid-column: 5 / span 6; }
+}
+@media (max-width: 1023px) {
+  body.is-authenticated #dashboardMainGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  body.is-authenticated #dashboardMainGrid > .dashboard-category-card,
+  body.is-authenticated #dashboardMainGrid > .dashboard-quick-card,
+  body.is-authenticated #dashboardMainGrid > .dashboard-top-card,
+  body.is-authenticated #dashboardMainGrid > .dashboard-recent-card {
+    grid-column: 1 !important;
+    grid-row: auto;
+  }
+}
