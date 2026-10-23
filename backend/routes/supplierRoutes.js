@@ -5,6 +5,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const Supplier = require("../models/Supplier");
+const User = require("../models/User");
 
 const router = express.Router();
 
@@ -97,7 +98,7 @@ router.post("/", async (req, res) => {
             phone,
             email,
             address,
-            status
+            status: "inactive"
         });
 
         res.status(201).json({
@@ -138,8 +139,7 @@ router.put("/:id", async (req, res) => {
             "contactPerson",
             "phone",
             "email",
-            "address",
-            "status"
+            "address"
         ];
 
         const updates = {};
