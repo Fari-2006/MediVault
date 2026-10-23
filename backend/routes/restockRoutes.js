@@ -9,6 +9,12 @@ const { protect, authorize } = require("../middleware/authMiddleware");
 const router = express.Router();
 router.use(protect);
 const isId = id => mongoose.isValidObjectId(id);
+router.get("/availability", authorize("admin", "cashier"), async (req, res) => {
+  try {
+    const count = await Supplier.countDocuments({ status: "active", linkedUser: { $exists: true, $ne: null } });
+    res.json({ available: count > 0, count });
+  } catch (error) { res.status(500).json({ message: "Unable to check supplier availability." }); }
+});
 router.get("/", authorize("admin", "cashier"), async (req, res) => {
   try {
     const requests = await RestockRequest.find().sort({ createdAt: -1 }).limit(1000).lean();
@@ -21,6 +27,8 @@ router.post("/", authorize("admin", "cashier"), async (req, res) => {
       typeof note !== "string" || note.length > 1000)
     return res.status(400).json({ message: "Provide a valid medicine, quantity and optional note (up to 1000 characters)." });
   try {
+    const available = await Supplier.exists({ status: "active", linkedUser: { $exists: true, $ne: null } });
+    if (!available) return res.status(409).json({ message: "Supplier account not active" });
     const medicine = await Medicine.findById(medicineId).lean();
     if (!medicine || medicine.status !== "active") return res.status(404).json({ message: "Active medicine not found." });
     if (medicine.quantity > medicine.reorderLevel) return res.status(409).json({ message: "This medicine is no longer low stock." });
