@@ -1,1 +1,50 @@
 .supplier-workspace{padding:4px 0 24px}.supplier-welcome h2{font-size:26px;margin:0 0 8px}.supplier-welcome p{color:#64748b;margin:0 0 18px}.supplier-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 24px}.supplier-tabs button{padding:10px 14px;background:#fff;color:#334155;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit}.supplier-tabs button.active{background:#0d9488;color:#fff;border-color:#0d9488}.supplier-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}.supplier-stats article,.supplier-order-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:17px}.supplier-stats article span{font-size:14px;color:#64748b}.supplier-stats h3{font-size:28px;margin:10px 0 0}.supplier-order-card{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:10px 0}.supplier-order-card strong{min-width:140px}.supplier-order-card span{font-size:14px}.supplier-order-card small{color:#64748b}.supplier-admin-orders{border-top:1px solid #e2e8f0;margin-top:28px;padding-top:18px}#supplierPortalPanel>#supplierProfileSummary,#supplierPortalPanel>#supplierOrderRows,#supplierPortalPanel>#supplierPortalMessage,#supplierPortalPanel>.restock-supplier-section{display:none!important}@media(max-width:850px){.supplier-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:500px){.supplier-stats{grid-template-columns:1fr}.supplier-order-card{flex-direction:column;align-items:flex-start}.supplier-tabs button{flex:1 1 42%}}
+/* Supplier dashboard reference layout */
+body.is-authenticated:has(#supplierPortalPanel:not([hidden])) .main-content{background:#f4f7fb}
+body.is-authenticated:has(#supplierPortalPanel:not([hidden])) #supplierPortalPanel{background:transparent;border:0;box-shadow:none;padding:0}
+body.is-authenticated:has(#supplierPortalPanel:not([hidden])) .sidebar{background:#fff}
+body.is-authenticated:has(#supplierPortalPanel:not([hidden])) .dashboard-welcome{display:none!important}
+.supplier-workspace>.supplier-tabs{display:none}
+.supplier-welcome{margin-bottom:18px}
+.supplier-welcome h2{font-size:25px;letter-spacing:-.5px;color:#0f172a}
+.supplier-welcome p{font-size:14px;color:#64748b}
+.supplier-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.supplier-stats .supplier-kpi{border:1px solid #e6eaf0;border-top:3px solid #0d9488;box-shadow:none;border-radius:12px;padding:18px 16px}
+.supplier-stats .supplier-kpi:nth-child(2){border-top-color:#f59e0b}
+.supplier-stats .supplier-kpi:nth-child(3){border-top-color:#3b82f6}
+.supplier-stats .supplier-kpi:nth-child(4){border-top-color:#22c55e}
+.supplier-kpi h3{font-size:30px;color:#0f172a;margin:9px 0 4px}
+.supplier-kpi small{display:block;color:#64748b;font-size:12px}
+.supplier-dashboard-layout{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(270px,1fr);gap:16px;align-items:start}
+.supplier-dashboard-card{background:#fff;border:1px solid #e5eaf0;border-radius:13px;padding:18px;min-width:0}
+.supplier-recent{min-height:315px}
+.supplier-dashboard-right{display:grid;gap:14px}
+.supplier-dashboard-card h3{font-size:17px;color:#0f172a;margin:0 0 10px}
+.supplier-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.supplier-section-head h3{margin:0 0 5px}
+.supplier-section-head p{font-size:12px;color:#64748b;margin:0}
+.supplier-section-head button{white-space:nowrap}
+.supplier-table-wrap{overflow-x:auto}
+.supplier-recent-table{border-collapse:collapse;width:100%;text-align:left;font-size:13px}
+.supplier-recent-table th{background:#f7f9fc;color:#64748b;font-size:11px;letter-spacing:.06em;font-weight:700}
+.supplier-recent-table td,.supplier-recent-table th{padding:13px 10px;border-bottom:1px solid #edf0f4}
+.supplier-recent-table td:first-child{font-weight:700;color:#0f172a}
+.supplier-status-badge{display:inline-block;border-radius:999px;padding:5px 10px;font-size:11px;font-weight:700;background:#e8eef9;color:#2563eb}
+.supplier-status-badge.status-pending{background:#fff3dc;color:#b45309}
+.supplier-status-badge.status-accepted{background:#e7f1ff;color:#1d4ed8}
+.supplier-status-badge.status-dispatched{background:#e8efff;color:#2563eb}
+.supplier-status-badge.status-delivered,.supplier-status-badge.status-received{background:#e5f7ed;color:#15803d}
+.supplier-status-badge.status-rejected{background:#fee2e2;color:#b91c1c}
+.supplier-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.supplier-quick-grid button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:14px;background:#effaf8;border:1px solid #d4f0eb;border-radius:9px;cursor:pointer;color:#0f766e}
+.supplier-quick-grid button:hover{background:#ddf4ef}
+.supplier-quick-grid strong{font-size:13px}
+.supplier-quick-grid small{font-size:11px;color:#64748b}
+.supplier-notification-count{border-radius:50px;background:#ef4444;color:#fff;font-size:11px;padding:2px 7px}
+.supplier-notice-row{display:flex;flex-direction:column;gap:4px;width:100%;padding:10px 0;text-align:left;border:0;border-bottom:1px solid #edf0f4;background:transparent;cursor:pointer}
+.supplier-notice-row strong{font-size:12px;color:#0f172a}
+.supplier-notice-row small{font-size:11px;color:#64748b}
+.navigation .supplier-only-nav[hidden]{display:none!important}
+@media(max-width:1100px){.supplier-dashboard-layout{grid-template-columns:minmax(0,1fr)}.supplier-dashboard-right{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.supplier-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.supplier-dashboard-right{grid-template-columns:1fr}}
+@media(max-width:480px){.supplier-stats{grid-template-columns:1fr}.supplier-quick-grid{grid-template-columns:1fr}.supplier-dashboard-card{padding:13px}}
