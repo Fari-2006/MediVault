@@ -221,4 +221,25 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
+
+router.patch("/:id/status", async (req, res) => {
+  if (req.user?.role !== "admin") return res.status(403).json({ message: "Admin access required." });
+  const status = req.body?.status;
+  if (!mongoose.isValidObjectId(req.params.id) || !["active", "inactive"].includes(status))
+    return res.status(400).json({ message: "Invalid supplier or status." });
+  try {
+    const supplier = await Supplier.findById(req.params.id);
+    if (!supplier) return res.status(404).json({ message: "Supplier not found." });
+    supplier.status = status;
+    await supplier.save();
+    if (supplier.linkedUser) await User.updateOne({ _id: supplier.linkedUser, role: "supplier" }, {
+      $set: { isActive: status === "active", approvalStatus: status === "active" ? "approved" : "pending" }
+    });
+    res.json({ message: status === "active" ? "Supplier activated." : "Supplier deactivated.", supplier });
+  } catch (error) {
+    console.error("Supplier status update:", error);
+    res.status(500).json({ message: "Unable to update supplier status." });
+  }
+});
+
 module.exports = router;
