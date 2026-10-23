@@ -16,6 +16,7 @@ const purchaseRoutes = require("./routes/purchaseRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const staffRoutes = require("./routes/staffRoutes");
 const auditRoutes = require("./routes/auditRoutes");
+const supplierAccountRoutes = require("./routes/supplierAccountRoutes");
 
 // ============================================
 // IMPORT AUTHENTICATION MIDDLEWARE
@@ -73,6 +74,7 @@ app.use("/api/reports", reportRoutes);
 
 app.use("/api/staff", staffRoutes);
 app.use("/api/admin/audit-logs", auditRoutes);
+app.use("/api/supplier-accounts", supplierAccountRoutes);
 
 // ============================================
 // HOME ROUTE
