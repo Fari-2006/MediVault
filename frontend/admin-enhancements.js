@@ -71,7 +71,7 @@
    const user=current(), active=!!token();
    document.querySelectorAll('[data-page="supplier-applications"],[data-page="audit-history"]').forEach(el=>el.hidden=!(active&&user?.role==="admin"));
    document.querySelectorAll('[data-page="supplier-portal"]').forEach(el=>el.hidden=!(active&&user?.role==="supplier"));
-   if(active&&user?.role==="supplier") document.querySelectorAll(".navigation .nav-link").forEach(el=>{if(!pages.includes(el.dataset.page))el.hidden=true;});
+   if(active&&user?.role==="supplier") document.querySelectorAll(".navigation .nav-link").forEach(el=>{if(!pages.includes(el.dataset.page) && !el.classList.contains("supplier-only-nav"))el.hidden=true;});
  }
  document.querySelectorAll(".navigation .nav-link").forEach(link=>{if(!pages.includes(link.dataset.page))return;
    link.addEventListener("click",e=>{e.preventDefault();const page=link.dataset.page;
