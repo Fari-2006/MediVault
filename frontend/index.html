@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="design-system.css">
     <link rel="stylesheet" href="dashboard-template.css">
     <link rel="stylesheet" href="login-spacious.css">
+    <link rel="stylesheet" href="admin-enhancements.css">
 </head>
 
 <body>
@@ -71,6 +72,9 @@
             <a href="#suppliers" class="nav-link" data-page="suppliers">
                 Supplier Management
             </a>
+            <a href="#supplier-applications" class="nav-link" data-page="supplier-applications" hidden>Supplier Approvals</a>
+            <a href="#audit-history" class="nav-link" data-page="audit-history" hidden>Audit History</a>
+            <a href="#supplier-portal" class="nav-link" data-page="supplier-portal" hidden>My Supplier Orders</a>
         </nav>
 
         <div class="sidebar-art" aria-hidden="true"><span>✚</span><strong>Trusted Pharmacy</strong><small>Smarter Inventory<br>Healthier Communities</small></div>
@@ -188,16 +192,16 @@
         </section>
 
         <section id="registerSection" class="panel login-panel" hidden>
-            <h2>Cashier Registration</h2>
-            <p>Apply for a cashier account. Admin approval is required.</p>
-            <form id="registerForm" class="login-form">
+            <h2>Account Registration</h2>
+            <p>Apply for a staff or supplier account. Admin approval is required.</p>
+            <form id="registerForm" class="login-form"><label for="registerRole">Account type</label><select id="registerRole"><option value="cashier">Pharmacy Staff</option><option value="supplier">Supplier</option></select><div id="registerCompanyWrap" hidden><label for="registerCompany">Supplier company name</label><input id="registerCompany" maxlength="150"></div>
                 <label for="registerName">Full name</label><input id="registerName" required minlength="2" maxlength="120">
                 <label for="registerEmail">Email</label><input id="registerEmail" type="email" required>
                 <label for="registerPhone">Phone number</label><input id="registerPhone" type="tel" required>
                 <label for="registerAddress">Address</label><input id="registerAddress" required maxlength="500">
                 <label for="registerPassword">Password (10+ characters)</label><input id="registerPassword" type="password" minlength="10" required autocomplete="new-password">
                 <label for="registerConfirm">Confirm password</label><input id="registerConfirm" type="password" minlength="10" required autocomplete="new-password">
-                <button class="primary-btn" type="submit">Submit Cashier Application</button>
+                <button class="primary-btn" type="submit">Submit Registration</button>
                 <p id="registerMessage" class="message" role="status"></p>
             </form>
             <button type="button" class="secondary-btn" id="backToLoginBtn">Back to Login</button>
@@ -216,7 +220,7 @@
         <!-- ============================================
              APPLICATION
         ============================================ -->
-        <div id="appSections" hidden>
+        <div id="appSections" hidden><section id="supplierApplicationsPanel" class="panel" hidden><h2>Supplier Account Approvals</h2><p id="supplierApplicationsMessage" role="status"></p><div id="supplierApplicationsRows"></div></section><section id="auditHistoryPanel" class="panel" hidden><h2>Audit History</h2><p id="auditHistoryMessage" role="status"></p><div id="auditHistoryRows"></div></section><section id="supplierPortalPanel" class="panel" hidden><h2>Supplier Portal</h2><p id="supplierPortalMessage" role="status"></p><div id="supplierProfileSummary"></div><div id="supplierOrderRows"></div></section>
 
             <!-- ============================================
                  DASHBOARD
@@ -1333,6 +1337,7 @@
      JAVASCRIPT
 ============================================ -->
 <script src="script.js"></script>
+<script src="admin-enhancements.js"></script>
 
 </body>
 </html>
