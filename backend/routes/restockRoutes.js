@@ -63,34 +63,4 @@ router.get("/supplier", authorize("supplier"), async (req, res) => {
     res.json({ requests });
   } catch (error) { res.status(500).json({ message: "Unable to load supplier restock requests." }); }
 });
-router.patch("/:id/status", authorize("supplier"), async (req, res) => {
-  const { action } = req.body || {};
-  if (!isId(req.params.id) || !["accept", "reject", "deliver"].includes(action))
-    return res.status(400).json({ message: "Invalid request or action." });
-  try {
-    const supplier = await Supplier.findOne({ linkedUser: req.user.id, status: "active" });
-    if (!supplier) return res.status(403).json({ message: "Active supplier profile required." });
-    const now = new Date();
-    let request;
-    if (action === "accept") {
-      request = await RestockRequest.findOneAndUpdate(
-        { _id: req.params.id, status: "Pending", supplier: null },
-        { $set: { supplier: supplier._id, status: "Accepted", respondedAt: now } }, { new: true });
-    } else if (action === "reject") {
-      request = await RestockRequest.findOneAndUpdate(
-        { _id: req.params.id, status: "Pending", supplier: null },
-        { $set: { supplier: supplier._id, status: "Rejected", active: false, respondedAt: now } }, { new: true });
-    } else {
-      request = await RestockRequest.findOneAndUpdate(
-        { _id: req.params.id, status: "Accepted", supplier: supplier._id },
-        { $set: { status: "Delivered", deliveredAt: now } }, { new: true });
-    }
-    if (!request) return res.status(409).json({ message: "Request has already changed status or belongs to another supplier." });
-    // Delivery is a supplier status update only; receiving stock remains an authorized pharmacy operation.
-    res.json({ message: "Restock request updated.", request });
-  } catch (error) {
-    console.error("Restock status error:", error);
-    res.status(500).json({ message: "Unable to update restock request." });
-  }
-});
 module.exports = router;
