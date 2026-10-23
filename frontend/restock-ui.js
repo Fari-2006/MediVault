@@ -29,14 +29,17 @@
  cancel.addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!overlay.hidden)close();});
  function openForm(medicine,button){
+   if(!supplierAvailable)return;
    selected=medicine;lastButton=button;nameInput.value=medicine.medicineName;batchInput.value=medicine.batchNumber;
    qtyInput.value=String(Math.max(1,Number(medicine.reorderLevel||0)-Number(medicine.quantity||0)));
    noteInput.value="";feedback.textContent="";overlay.hidden=false;qtyInput.focus();
  }
  const statuses=new Map();
+ let supplierAvailable=false;
  const key=m=>String(m._id);
  async function refreshStatuses(){
-   const data=await api("/restock-requests");
+   const [data,availability]=await Promise.all([api("/restock-requests"),api("/restock-requests/availability")]);
+   supplierAvailable=availability.available;
    statuses.clear();
    for(const request of data.requests){if(request.active||request.status==="Delivered") {
      const k=String(request.medicine);if(!statuses.has(k))statuses.set(k,request);
@@ -45,10 +48,10 @@
  }
  function updateButton(button,medicine){
    const request=statuses.get(key(medicine));
-   button.disabled=Boolean(request);
-   button.textContent=request ? (request.status==="Pending"?"Requested":request.status) : "Order";
+   button.disabled=Boolean(request)||!supplierAvailable;
+   button.textContent=request ? (request.status==="Pending"?"Requested":request.status) : supplierAvailable ? "Order" : "Supplier account not active";
    button.className=request?"restock-status":"secondary-btn restock-order-btn";
-   button.title=request?("Request status: "+request.status):"Order this medicine";
+   button.title=request?("Request status: "+request.status):supplierAvailable?"Order this medicine":"Supplier account not active";
  }
  async function enhanceLowStock(){
    const modal=$("kpiDetailTitle");if(!modal||modal.textContent!=="Low Stock Medicines")return;
