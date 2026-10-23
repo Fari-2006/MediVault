@@ -15,6 +15,8 @@ const publicUser = user => ({
 router.post("/register", async (req, res) => {
   try {
     const { name, password, confirmPassword, phone, address } = req.body || {};
+    if (req.body?.role && !["supplier", "cashier"].includes(req.body.role))
+      return res.status(400).json({ message: "Invalid registration role." });
     const requestedRole = req.body?.role === "supplier" ? "supplier" : "cashier";
     const companyName = String(req.body?.companyName || "").trim();
     if (requestedRole === "supplier" && (companyName.length < 2 || companyName.length > 150))
