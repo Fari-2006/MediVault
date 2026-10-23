@@ -10,8 +10,22 @@
  panel.prepend(shell);
  const menu=["Dashboard","Purchase Orders","Delivery Tracking","Order History","Notifications","Company Profile","Help & Support","Logout"];
  let view="Dashboard";
- const show=async name=>{if(name==="Logout"){document.getElementById("logoutBtn")?.click();return;}view=name;await render();};
+ const show=async name=>{if(name==="Logout"){document.getElementById("logoutBtn")?.click();return;}view=name;syncSidebar();await render();};
  for(const name of menu){const b=node("button",name);b.type="button";b.addEventListener("click",()=>show(name));tabs.append(b);}
+ const sidebar=document.querySelector(".navigation");
+ if(sidebar){
+  for(const name of menu){
+   const link=node("a",name);link.href="#supplier-"+name.toLowerCase().replace(/[^a-z]+/g,"-");link.className="nav-link supplier-only-nav";link.hidden=true;
+   link.addEventListener("click",e=>{e.preventDefault();if(currentUser?.role==="supplier")show(name);});
+   sidebar.append(link);
+  }
+ }
+ const syncSidebar=()=>{
+  const supplier=typeof currentUser!=="undefined"&&currentUser?.role==="supplier"&&typeof authToken!=="undefined"&&!!authToken;
+  document.querySelectorAll(".supplier-only-nav").forEach(link=>{link.hidden=!supplier;link.classList.toggle("active",supplier&&link.textContent===view);});
+  if(supplier)document.querySelectorAll('.navigation [data-page="supplier-portal"]').forEach(link=>link.hidden=true);
+ };
+
  const fmt=d=>d?new Date(d).toLocaleDateString("en-IN"):"—";
  const orderCard=(order,detail=false)=>{
   const card=node("article");card.className="supplier-order-card";
@@ -35,6 +49,7 @@
  function action(parent,label,fn){const b=node("button",label);b.type="button";b.className="secondary-btn";b.addEventListener("click",async()=>{b.disabled=true;try{await fn();await render();}catch(e){alert(e.message);b.disabled=false;}});parent.append(b);}
  async function render(){
   if(typeof currentUser==="undefined"||currentUser?.role!=="supplier"||panel.hidden)return;
+  syncSidebar();
   content.replaceChildren();header.replaceChildren();
   header.append(node("h2","Welcome back, "+currentUser.name));
   header.append(node("p","Here is an overview of your purchase orders and deliveries."));
