@@ -404,8 +404,12 @@ if (loginForm) {
 
             loginForm.reset();
 
-            await refreshDashboard();
-            showPage("dashboard");
+            if (currentUser.role === "supplier") {
+                document.querySelector('[data-page="supplier-portal"]')?.click();
+            } else {
+                await refreshDashboard();
+                showPage("dashboard");
+            }
 
             setMessage(loginMessage, "");
             showToast("Welcome to MediVault!");
@@ -2982,8 +2986,9 @@ if (dashboardCharts) dashboardCharts.hidden = true;
 // CASHIER SIGNUP & FIRST-LOGIN PASSWORD CHANGE
 function applyRoleNavigation() {
     const cashier = currentUser?.role === "cashier";
+    const supplier = currentUser?.role === "supplier";
     document.querySelectorAll('.nav-link').forEach(link => {
-        link.hidden = cashier && ["purchases","suppliers","reports","staff"].includes(link.dataset.page);
+        link.hidden = supplier ? link.dataset.page !== "supplier-portal" : cashier && ["purchases","suppliers","reports","staff","supplier-applications","audit-history"].includes(link.dataset.page);
     });
     const charts = $("dashboardCharts");
     if (charts && cashier) charts.hidden = true;
