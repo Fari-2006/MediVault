@@ -5,6 +5,7 @@ const Medicine = require("../models/Medicine");
 const User = require("../models/User");
 const Supplier = require("../models/Supplier");
 const RestockRequest = require("../models/RestockRequest");
+const SupplierNotification = require("../models/SupplierNotification");
 const { protect, authorize } = require("../middleware/authMiddleware");
 const router = express.Router();
 router.use(protect);
@@ -35,11 +36,16 @@ router.post("/", authorize("admin", "cashier"), async (req, res) => {
     const existing = await RestockRequest.findOne({ medicine: medicine._id, active: true }).lean();
     if (existing) return res.status(409).json({ message: "An active restock request already exists.", request: existing });
     const actor = await User.findById(req.user.id).select("name").lean();
+    const supplier = await Supplier.findOne({status:"active",linkedUser:{$exists:true,$ne:null}}).sort({createdAt:1}).lean();
+    if (!supplier) return res.status(409).json({message:"Supplier account not active"});
     const request = await RestockRequest.create({
       medicine: medicine._id, medicineName: medicine.medicineName, batchNumber: medicine.batchNumber,
-      quantityRequested: quantity, note: note.trim(), requestedBy: req.user.id,
+      quantityRequested: quantity, note: note.trim(), supplier: supplier._id,
+      purchaseOrderNumber: "PO-"+new mongoose.Types.ObjectId().toString().slice(-10).toUpperCase(),
+      requestedBy: req.user.id,
       requestedByName: actor?.name || "Pharmacy Staff"
     });
+    await SupplierNotification.create({supplier:supplier._id,order:request._id,message:"New purchase order "+request.purchaseOrderNumber+" for "+request.medicineName});
     res.status(201).json({ message: "Order request sent to supplier", request });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ message: "An active restock request already exists." });
