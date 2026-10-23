@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
+const { loginRateLimit, recordFailedLogin, clearLoginFailures } = require("../middleware/loginRateLimit");
 const cleanEmail = email => String(email || "").trim().toLowerCase();
 const publicUser = user => ({
   id: user._id, name: user.name, email: user.email, role: user.role,
@@ -36,13 +37,17 @@ router.post("/register", async (req, res) => {
     res.status(500).json({ message: "Registration failed." });
   }
 });
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimit, async (req, res) => {
   try {
     const email = cleanEmail(req.body?.email);
     const password = req.body?.password;
     if (!email || typeof password !== "string") return res.status(400).json({ message: "Email and password are required." });
     const user = await User.findOne({ email });
-    if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ message: "Invalid email or password." });
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      recordFailedLogin(req);
+      return res.status(401).json({ message: "Invalid email or password." });
+    }
+    clearLoginFailures(req);
     if (user.role !== "admin" && user.approvalStatus === "pending") return res.status(403).json({ message: "Your registration is awaiting Admin approval." });
     if (user.approvalStatus === "rejected") return res.status(403).json({ message: "Your registration was rejected." });
     if (!user.isActive) return res.status(403).json({ message: "Your account is inactive. Contact the Admin." });
