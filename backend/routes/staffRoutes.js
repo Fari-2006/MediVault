@@ -1,6 +1,7 @@
 "use strict";
 const express = require("express");
 const User = require("../models/User");
+const AuditLog = require("../models/AuditLog");
 const { protect, authorize } = require("../middleware/authMiddleware");
 const router = express.Router();
 router.use(protect, authorize("admin"));
@@ -30,6 +31,7 @@ router.patch("/:id/approval", async (req, res) => {
   user.rejectionReason = action === "reject" ? String(reason || "").slice(0, 500) : "";
   if (action === "approve") user.joiningDate = new Date();
   await user.save();
+  await AuditLog.create({ actor: req.user.id, action: action === "approve" ? "staff.approved" : "staff.rejected", targetType: "User", targetId: user._id, details: { reason: user.rejectionReason } }).catch(error => console.error("Audit log error:", error));
   res.json({ message: "Application " + (action === "approve" ? "approved" : "rejected") + ".", staff: safe(user) });
 });
 router.patch("/:id/status", async (req, res) => {
@@ -38,6 +40,7 @@ router.patch("/:id/status", async (req, res) => {
   if (!user) return res.status(404).json({ message: "Approved cashier not found." });
   user.isActive = req.body.isActive;
   await user.save();
+  await AuditLog.create({ actor: req.user.id, action: user.isActive ? "staff.activated" : "staff.deactivated", targetType: "User", targetId: user._id }).catch(error => console.error("Audit log error:", error));
   res.json({ message: "Staff status updated.", staff: safe(user) });
 });
 module.exports = router;
