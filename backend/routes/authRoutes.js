@@ -15,6 +15,10 @@ const publicUser = user => ({
 router.post("/register", async (req, res) => {
   try {
     const { name, password, confirmPassword, phone, address } = req.body || {};
+    const requestedRole = req.body?.role === "supplier" ? "supplier" : "cashier";
+    const companyName = String(req.body?.companyName || "").trim();
+    if (requestedRole === "supplier" && (companyName.length < 2 || companyName.length > 150))
+      return res.status(400).json({ message: "Supplier company name is required (2–150 characters)." });
     const email = cleanEmail(req.body?.email);
     if (typeof name !== "string" || name.trim().length < 2 || name.length > 120 ||
         !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 ||
@@ -27,9 +31,18 @@ router.post("/register", async (req, res) => {
     if (await User.exists({ email })) return res.status(409).json({ message: "An account with this email already exists." });
     const user = await User.create({
       name: name.trim(), email, phone: phone.trim(), address: address.trim(),
-      password: await bcrypt.hash(password, 12), role: "cashier",
+      password: await bcrypt.hash(password, 12), role: requestedRole,
       approvalStatus: "pending", isActive: false
     });
+    if (requestedRole === "supplier") {
+      const Supplier = require("../models/Supplier");
+      try {
+        await Supplier.create({ linkedUser: user._id, supplierName: companyName, contactPerson: name.trim(), phone: phone.trim(), email, address: address.trim(), status: "inactive" });
+      } catch (error) {
+        await User.deleteOne({ _id: user._id });
+        throw error;
+      }
+    }
     res.status(201).json({ message: "Your registration is awaiting Admin approval.", user: publicUser(user) });
   } catch (error) {
     if (error.code === 11000) return res.status(409).json({ message: "An account with this email already exists." });
